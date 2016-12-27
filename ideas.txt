@@ -1,0 +1,4 @@
+= Ideas
+
+- Use "Playing ..." to say which char users are
+	- users can whisper bot to toggle which char they are
