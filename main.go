@@ -124,10 +124,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Dice command
-	fmt.Printf("\n%s\n", m.Content)
 	if strings.HasPrefix(m.Content, "!!roll") {
 		fmt.Print("Rolling")
 		result, err := dice.Roll(m.Content)
+		result = m.Author.Username + " " + result
 		if err == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, result)
 			if err != nil {
