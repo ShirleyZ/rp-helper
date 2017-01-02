@@ -1,17 +1,26 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ShirleyZ/godice"
 	"github.com/bwmarrin/discordgo"
+
+	"./profile"
 )
 
-// const CHANNEL_SERVER_CHATTER = "259926279820804097"
+type UserData struct {
+	Username string
+	Credits  int
+	Profile  string
+	Title    string
+}
 
 // Variables used for command line parameters
 var (
@@ -96,11 +105,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Show information about the message sent
-	if m.Content == "!thism" {
+	if m.Content == CMD_PREFIX+"thism" {
 		fmt.Println("Executing cmd: !thism")
 		channel, err := s.Channel(m.ChannelID)
 		if err != nil {
-			fmt.Printf("!thism cannot find channel with that id")
+			fmt.Printf(CMD_PREFIX + "thism cannot find channel with that id")
 			log.Fatal(err)
 		}
 		msg := "Sent: " + m.Timestamp + "\n"
@@ -119,14 +128,39 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// If the message is "!test" send the message to server-chatter
-	if m.Content == "!test" {
+	if m.Content == CMD_PREFIX+"test" {
 		// dice.Roll("1d5")
 	}
 
+	// see profile stats
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"stats") {
+		if m.Content == CMD_PREFIX+"stats" {
+			data, err := profile.CheckStats(m.Author.Username)
+			if err != nil {
+				log.Println("Error checking user stats")
+				log.Fatal(err)
+			}
+			parsed := UserData{}
+			err = json.Unmarshal([]byte(data), &parsed)
+			if err != nil {
+				log.Fatal(err)
+			}
+			message := " \n=== " + parsed.Title + " " + parsed.Username + " ===\n"
+			message += "o Credits: " + strconv.Itoa(parsed.Credits) + "\n"
+			message += "o Profile: \n" + parsed.Profile + "\n"
+			_, err = s.ChannelMessageSend(m.ChannelID, message)
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+
+		}
+	}
+
 	// Dice command
-	if strings.HasPrefix(m.Content, "!!roll") {
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"roll") {
 		fmt.Print("Rolling")
-		result, err := dice.Roll(m.Content)
+		result, err := dice.Roll(m.Content[len(CMD_PREFIX+"roll"):])
 		result = m.Author.Username + " " + result
 		if err == nil {
 			_, err = s.ChannelMessageSend(m.ChannelID, result)

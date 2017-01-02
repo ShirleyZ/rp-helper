@@ -1,0 +1,4 @@
+== todo
+
+[ ] Make it handle if server isn't up
+[*] Make it create a user if you look and you odn't have data
