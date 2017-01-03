@@ -12,10 +12,11 @@ import (
 	"github.com/ShirleyZ/godice"
 	"github.com/bwmarrin/discordgo"
 
+	"./emotes"
 	"./profile"
 )
 
-type UserData struct {
+type UserProfile struct {
 	Username string
 	Credits  int
 	Profile  string
@@ -112,18 +113,32 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			fmt.Printf(CMD_PREFIX + "thism cannot find channel with that id")
 			log.Fatal(err)
 		}
+
 		msg := "Sent: " + m.Timestamp + "\n"
 		msg += "Channel: " + channel.Name + "(" + m.ChannelID + ")\n"
 		msg += "isPrivate: " + fmt.Sprintf("%t", channel.IsPrivate) + "\n"
 		if channel.IsPrivate == true {
-			msg += "Recipient: " + channel.Recipient.Username
+			msg += "**== PM details ==**\n"
+			msg += "Recipient: " + channel.Recipient.Username + "\n"
+			msg += "Author: " + m.Author.Username + "(" + m.Author.ID + ")\n"
+			log.Printf("\n%+v\n", m.Author)
+		} else {
+			msg += "**== Channel details ==**\n"
+			permissions, err := s.State.UserChannelPermissions(m.Author.ID, m.ChannelID)
+			log.Printf("\n%v\n", permissions)
+			// member, err := s.GuildMember(channel.GuildID, m.Author.ID)
+			if err != nil {
+				fmt.Printf(CMD_PREFIX + "thism cannot find guild member")
+				log.Fatal(err)
+			}
+			msg += "Server: (" + channel.GuildID + ")\n"
+			// msg += fmt.Sprintf("Author roles: %+v \n", member.Roles)
 		}
 
 		_, err = s.ChannelMessageSend(m.ChannelID, msg)
 		if err != nil {
 			fmt.Println("!thism: Channel msg send unsuccessful")
 			log.Fatal(err)
-			// return
 		}
 	}
 
@@ -132,29 +147,105 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// dice.Roll("1d5")
 	}
 
-	// see profile stats
-	if strings.HasPrefix(m.Content, CMD_PREFIX+"stats") {
-		if m.Content == CMD_PREFIX+"stats" {
-			data, err := profile.CheckStats(m.Author.Username)
+	// Register a new account
+	if m.Content == CMD_PREFIX+"register" {
+		fmt.Println("Executing cmd: register")
+		channel, err := s.Channel(m.ChannelID)
+		if err != nil {
+			fmt.Printf(CMD_PREFIX + "register cannot find channel with that id")
+			log.Fatal(err)
+		}
+
+		if channel.IsPrivate == false {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Please message me privately, and we can sort out the necessary paperwork.")
 			if err != nil {
-				log.Println("Error checking user stats")
+				fmt.Println("register: Channel msg send unsuccessful")
 				log.Fatal(err)
 			}
-			parsed := UserData{}
+		} else {
+			userInfo, err := profile.RegisterUser(m.Author.Username)
+			if err != nil {
+				// handle those errors yo
+				log.Println("Register: Something went wrong")
+				log.Fatal(err)
+			} else {
+
+			}
+		}
+	}
+
+	// see profile stats
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"stats") {
+		var checkUser string
+		if m.Content == CMD_PREFIX+"stats" {
+			checkUser = m.Author.Username
+		} else {
+			checkUser = m.Content[len(CMD_PREFIX+"stats "):]
+		}
+
+		data, err := profile.CheckStats(checkUser)
+		if err == "No user with that name found" {
+			_, err = s.ChannelMessageSend(m.ChannelID, "I don't seem to have your record on file. Please message me to $register.")
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else if err != nil {
+			log.Println("Error checking user stats")
+			log.Fatal(err)
+		} else {
+			parsed := UserProfile{}
 			err = json.Unmarshal([]byte(data), &parsed)
 			if err != nil {
 				log.Fatal(err)
 			}
-			message := " \n=== " + parsed.Title + " " + parsed.Username + " ===\n"
-			message += "o Credits: " + strconv.Itoa(parsed.Credits) + "\n"
-			message += "o Profile: \n" + parsed.Profile + "\n"
+			content := "```Markdown\n# == " + parsed.Title + " " + parsed.Username + " == #\n"
+			content += "* Credits: " + strconv.Itoa(parsed.Credits) + "\n"
+			content += "* Profile: \n> " + parsed.Profile + "\n```"
+			message := emotes.LookUpThis(content)
 			_, err = s.ChannelMessageSend(m.ChannelID, message)
 			if err != nil {
 				log.Fatal(err)
 			}
+		}
+
+	}
+
+	// Add credits command
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"credit") {
+		// Parse arguments [who, amount]
+		args := strings.Split(m.Content, " ")
+		amount, err := strconv.Atoi(args[len(args)-1])
+		if err != nil {
+			log.Println("Error: Unable to parse amount")
+			log.Fatal(err)
+		}
+		receiverName := ""
+		if len(args) > 3 {
+			for i := 1; i < len(args)-1; i++ {
+				receiverName += args[i]
+				if i != len(args)-1 {
+					receiverName += " "
+				}
+			}
 		} else {
+			receiverName = args[1]
+		}
+
+		log.Printf("\nReceiver Name\n%+v\n", receiverName)
+		log.Printf("\nAmount\n%d\n", amount)
+
+		err = profile.AddCredits(receiverName, amount)
+		if err != nil {
+			log.Println("Unsuccessful attemptt o add")
+			_, err = s.ChannelMessageSend(m.ChannelID, "UnSuccess")
+		} else {
+			_, err = s.ChannelMessageSend(m.ChannelID, "Success")
+			if err != nil {
+				fmt.Println("unable to send message")
+			}
 
 		}
+
 	}
 
 	// Dice command

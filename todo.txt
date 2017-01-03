@@ -1,4 +1,15 @@
 == todo
 
 [ ] Make it handle if server isn't up
-[*] Make it create a user if you look and you odn't have data
+
+[ ] Clean up user creation
+		* you can keep creating new users even if they aren't users in the channel DB
+		[ ] Make registration through pms
+
+
+[ ] Make it add credits to user
+		[ ] Make it closed off, or only admins have permission
+		[ ] Permissions
+				[ ] Check user roles for allowed thing
+
+[ ] Allow people to set their own profile text
