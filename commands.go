@@ -2,12 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	// "flag"
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
-	// "time"
 
 	"./emotes"
 	"./profile"
@@ -17,6 +15,7 @@ import (
 )
 
 func cmd_credit(s *discordgo.Session, m *discordgo.MessageCreate) {
+	fmt.Println("=== Executing cmd: credit")
 	// Parse arguments [who, amount]
 	args := strings.Split(m.Content, " ")
 	amount, err := strconv.Atoi(args[len(args)-1])
@@ -53,13 +52,14 @@ func cmd_credit(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
-	fmt.Println("Executing cmd: register")
+	fmt.Println("=== Executing cmd: register")
 	channel, err := s.Channel(m.ChannelID)
 	if err != nil {
-		fmt.Printf(CMD_PREFIX + "register cannot find channel with that id")
+		fmt.Printf("register cannot find channel with that id")
 		log.Printf("\n%v\n", err)
 	}
 
+	log.Println("Getting response channel...")
 	sendToThis := m.ChannelID
 
 	if channel.IsPrivate == false {
@@ -70,15 +70,19 @@ func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		sendToThis = channel.ID
 	}
+	log.Println("Done")
+	log.Println("Calling profile.RegisterUser...")
 	userInfo, err := profile.RegisterUser(m.Author.Username)
+	log.Println("Done")
 
 	if err != nil && err.Error() == profile.ERR_USEREXISTS {
+		log.Println("Handling: User already exists")
 		_, err = s.ChannelMessageSend(sendToThis, "You appear to have registered with us already. Please say $stats to check your details.")
 		if err != nil {
 			log.Printf("\nRegistration Error:\n%v\n", err)
 		}
-		log.Println("Register: User already exists")
 	} else if err != nil {
+		log.Println("Handling: Other errors")
 		// handle those errors yo
 		_, err = s.ChannelMessageSend(sendToThis, "Oh dear! Something has gone wrong. Would you like to try and $register again?")
 		if err != nil {
@@ -87,6 +91,7 @@ func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Println("Register: Something went wrong")
 		log.Printf("\nRegistration Error:\n%v\n", err)
 	} else {
+		log.Println("Handling: New user created")
 		log.Printf("\nUserInfo\n%+v\n", userInfo)
 		// message := emotes.LookUpThis(content)
 		_, err = s.ChannelMessageSend(sendToThis, "There we are! We've got your papers all set up now. Take a look")
@@ -94,6 +99,8 @@ func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
 			log.Printf("\nRegistration Error:\n%v\n", err)
 		}
 	}
+
+	log.Println("=== End command")
 }
 
 func cmd_roll(s *discordgo.Session, m *discordgo.MessageCreate) {

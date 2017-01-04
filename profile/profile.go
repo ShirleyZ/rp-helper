@@ -78,43 +78,43 @@ func CheckStats(username string) (string, error) {
 
 func RegisterUser(username string) (string, error) {
 	username = strings.ToLower(username)
-	log.Printf("=== Registering this user: %s", username)
+	log.Printf("== Registering this user: %s", username)
 	// Check that it doesn't currently exist
+	log.Println("Looking for user in database...")
 	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username)
+	log.Println("Done")
 
+	log.Println("Reading GET response...")
 	body, err2 := ioutil.ReadAll(resp.Body)
 	if err2 != nil {
 		log.Println("Unable to read response body")
 		log.Fatal(err2)
 		return "", err2
 	}
+	log.Println("Done")
 
-	if err == nil {
+	if string(body) == ERR_USEREXISTS {
 		// Shouldn't find any existing users with same name
 		log.Println("User already exists")
 		return "", errors.New(ERR_USEREXISTS)
 
-	} else if string(body) != ERR_USEREXISTS {
-		log.Println("Other error")
-		log.Fatal(err)
+	} else if err != nil {
+		log.Println("Other error from find endpoint")
+		log.Printf("\nError\n%v\n", err)
 		return "", err
 	}
-	// } else if err != nil {
-	// Check that the error is the one we want
-
-	// if body != []byte(ERR_USEREXISTS) {
-	// 	log.Println("Other error")
-	// 	log.Fatal(err)
-	// 	return "", err
-	// }
 
 	// Going ahead w/ account creation
+	log.Println("Calling registration endpoint...")
 	resp, err = http.Get(API_ENDPOINT + "add/user/?name=" + username)
 	if err != nil {
 		log.Println("Unable to hit GET add/?name=")
 		log.Fatal(err)
 		return "", errors.New("Unable to hit GET add/?name=")
 	}
+	log.Println("Done")
+
+	log.Println("Reading response body...")
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("Unable to read response body")
@@ -122,7 +122,8 @@ func RegisterUser(username string) (string, error) {
 		return "", errors.New("Unable to read response body")
 
 	}
-	log.Printf("\n%s\n", body)
+	log.Println("Done")
+	log.Printf("\nNew user data:\n%s\n", body)
 
 	return string(body), nil
 	// }
