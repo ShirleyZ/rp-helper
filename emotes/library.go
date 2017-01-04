@@ -1,6 +1,9 @@
 package emotes
 
-// Mocking a constant array
+// Registration-related
+// const
+
+// Random filler statements
 var EMOTE_SEARCHING []string = []string{
 	"*rifles through the cabinets, and pulls something out*",
 	"*runs their finger along the shelf. They stop and pull something out*",
