@@ -78,25 +78,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// If the message is "ping" reply with "Pong!"
-	if m.Content == "ping" {
-		fmt.Print("Executing cmd: ping")
-		_, err := s.ChannelMessageSend(m.ChannelID, "Pongg!")
-		if err != nil {
-			fmt.Println("ping: channelmsgsend error")
-			log.Printf("\n%v\n", err)
-		}
-	}
-
-	// If the message is "pong" reply with "Ping!"
-	if m.Content == "pong" {
-		fmt.Println("Executing cmd: pong")
-		_, err := s.ChannelMessageSend(m.ChannelID, "Ping!")
-		if err != nil {
-			fmt.Print("pong: channelmsgsend error")
-			log.Printf("\n%v\n", err)
-		}
-	}
+	// ******** DEV COMMANDS *********
 
 	// Show information about the message sent
 	if m.Content == CMD_PREFIX+"thism" {
@@ -107,6 +89,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Content == CMD_PREFIX+"test" {
 		// dice.Roll("1d5")
 	}
+
+	// ******** RP COMMANDS *********
+
+	cmd_earnCredits(s, m)
 
 	// Register a new account
 	if m.Content == CMD_PREFIX+"register" {
@@ -121,6 +107,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Add credits command
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"credit") {
 		cmd_credit(s, m)
+	}
+
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"setprofile") {
+		cmd_setProfile(s, m)
 	}
 
 	// Dice command

@@ -20,11 +20,11 @@ type UserData struct {
 	Title    string
 }
 
-func AddCredits(username string, amount int) error {
+func AddCredits(id string, username string, amount int) error {
 	username = strings.ToLower(username)
-	log.Printf("=== Adding %d credits to %s", amount, username)
+	log.Printf("=== Adding %d credits to %s (%s)", amount, username, id)
 
-	sendBody, err := url.ParseQuery("username=" + username + "&amount=" + strconv.Itoa(amount))
+	sendBody, err := url.ParseQuery("username=" + username + "&amount=" + strconv.Itoa(amount) + "&id=" + id)
 	if err != nil {
 		log.Println("\nwewedwe\n")
 		log.Fatal(err)
@@ -46,11 +46,11 @@ func AddCredits(username string, amount int) error {
 	}
 }
 
-func CheckStats(username string) (string, error) {
+func CheckStats(id string, username string) (string, error) {
 	username = strings.ToLower(username)
-	log.Printf("=== Checking status for: %s", username)
+	log.Printf("=== Checking status for: %s (%s)", username, id)
 
-	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username)
+	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username + "&id=" + id)
 	if err != nil {
 		log.Println("Unable to hit GET find/?name=")
 		log.Fatal(err)
@@ -76,12 +76,12 @@ func CheckStats(username string) (string, error) {
 // 	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username)
 // }
 
-func RegisterUser(username string) (string, error) {
+func RegisterUser(id string, username string) (string, error) {
 	username = strings.ToLower(username)
-	log.Printf("== Registering this user: %s", username)
+	log.Printf("== Registering this user: %s (%s)", username, id)
 	// Check that it doesn't currently exist
 	log.Println("Looking for user in database...")
-	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username)
+	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username + "&id=" + id)
 	log.Println("Done")
 
 	log.Println("Reading GET response...")
@@ -106,7 +106,7 @@ func RegisterUser(username string) (string, error) {
 
 	// Going ahead w/ account creation
 	log.Println("Calling registration endpoint...")
-	resp, err = http.Get(API_ENDPOINT + "add/user/?name=" + username)
+	resp, err = http.Get(API_ENDPOINT + "add/user/?name=" + username + "&id=" + id)
 	if err != nil {
 		log.Println("Unable to hit GET add/?name=")
 		log.Fatal(err)
@@ -128,4 +128,30 @@ func RegisterUser(username string) (string, error) {
 	return string(body), nil
 	// }
 
+}
+
+func SetProfile(id string, profileBody string) (string, error) {
+	log.Printf("== Registering this user: %s ", id)
+
+	sendBody, err := url.ParseQuery("id=" + id + "&profile=" + profileBody)
+	if err != nil {
+		log.Println("\nwewedwe\n")
+		log.Fatal(err)
+	}
+	resp, err := http.PostForm(API_ENDPOINT+"profile/edit/", sendBody)
+	if err != nil {
+		log.Println("didn't scucess the post")
+		log.Fatal(err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("didn't suceess reading the body")
+		log.Fatal(err)
+	}
+	log.Printf("\nBody\n%+v", body)
+	if body == nil {
+		return "", nil
+	} else {
+		return "", errors.New("Unsuccessful")
+	}
 }

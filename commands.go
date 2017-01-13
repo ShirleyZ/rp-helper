@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	"./emotes"
 	"./profile"
@@ -38,7 +40,7 @@ func cmd_credit(s *discordgo.Session, m *discordgo.MessageCreate) {
 	log.Printf("\nReceiver Name\n%+v\n", receiverName)
 	log.Printf("\nAmount\n%d\n", amount)
 
-	err = profile.AddCredits(receiverName, amount)
+	err = profile.AddCredits(m.Author.ID, receiverName, amount)
 	if err != nil {
 		log.Println("Unsuccessful attemptt o add")
 		_, err = s.ChannelMessageSend(m.ChannelID, "UnSuccess")
@@ -49,6 +51,15 @@ func cmd_credit(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 	}
+}
+
+func cmd_earnCredits(s *discordgo.Session, m *discordgo.MessageCreate) {
+	fmt.Println("=== Executing cmd: earn Credits")
+
+	rand.Seed(time.Now().UTC().UnixNano())
+	amount := rand.Intn(9) + 1
+	log.Printf("\nEarning cash money: %v", amount)
+	_ = profile.AddCredits(m.Author.ID, m.Author.Username, amount)
 }
 
 func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -72,7 +83,7 @@ func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	log.Println("Done")
 	log.Println("Calling profile.RegisterUser...")
-	userInfo, err := profile.RegisterUser(m.Author.Username)
+	userInfo, err := profile.RegisterUser(m.Author.ID, m.Author.Username)
 	log.Println("Done")
 
 	if err != nil && err.Error() == profile.ERR_USEREXISTS {
@@ -116,36 +127,78 @@ func cmd_roll(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func cmd_stats(s *discordgo.Session, m *discordgo.MessageCreate) {
-	var checkUser string
-	if m.Content == CMD_PREFIX+"stats" {
-		checkUser = m.Author.Username
-	} else {
-		checkUser = m.Content[len(CMD_PREFIX+"stats "):]
+func cmd_setProfile(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// get the stuff
+	channel, err := s.Channel(m.ChannelID)
+	if err != nil {
+		fmt.Printf("register cannot find channel with that id")
+		log.Printf("\n%v\n", err)
 	}
 
-	data, err := profile.CheckStats(checkUser)
-	if err != nil && err.Error() == "No user with that name found" {
-		_, err = s.ChannelMessageSend(m.ChannelID, "I don't seem to have your record on file. Please message me to $register.")
+	sendToThis := m.ChannelID
+
+	if channel.IsPrivate == false {
+		channel, err := s.UserChannelCreate(m.Author.ID)
+		if err != nil {
+			fmt.Println("Unable to create private channel")
+			log.Printf("\n%v\n", err)
+		}
+		sendToThis = channel.ID
+	}
+
+	if len(m.Content) <= len(CMD_PREFIX+"setprofile") {
+		_, err = s.ChannelMessageSend(sendToThis, "Invalid format. Try $setprofile *<your text here>*")
 		if err != nil {
 			log.Printf("\n%v\n", err)
 		}
-	} else if err != nil {
-		log.Println("Error checking user stats")
-		log.Printf("\n%v\n", err)
 	} else {
-		parsed := UserProfile{}
-		err = json.Unmarshal([]byte(data), &parsed)
+		profileBody := m.Content[len(CMD_PREFIX+"setprofile "):]
+		result, err := profile.SetProfile(m.Author.ID, profileBody)
 		if err != nil {
 			log.Printf("\n%v\n", err)
 		}
-		content := "```Markdown\n# == " + parsed.Title + " " + parsed.Username + " == #\n"
-		content += "* Credits: " + strconv.Itoa(parsed.Credits) + "\n"
-		content += "* Profile: \n> " + parsed.Profile + "\n```"
-		message := emotes.LookUpThis(content)
-		_, err = s.ChannelMessageSend(m.ChannelID, message)
+		log.Printf("\nResult\n%s", result)
+		_, err = s.ChannelMessageSend(sendToThis, "There we are. I've updated your record with your new information.")
 		if err != nil {
 			log.Printf("\n%v\n", err)
+		}
+	}
+}
+
+func cmd_stats(s *discordgo.Session, m *discordgo.MessageCreate) {
+	var checkUser string
+	if m.Content != CMD_PREFIX+"stats" {
+		_, err := s.ChannelMessageSend(m.ChannelID, "This feature is currently disabled")
+		if err != nil {
+			log.Printf("\n%v\n", err)
+		}
+		// checkUser = m.Content[len(CMD_PREFIX+"stats "):]
+	} else if m.Content == CMD_PREFIX+"stats" {
+		checkUser = m.Author.Username
+
+		data, err := profile.CheckStats(m.Author.ID, checkUser)
+		if err != nil && err.Error() == "No user with that name found" {
+			_, err = s.ChannelMessageSend(m.ChannelID, "I don't seem to have your record on file. Please message me to $register.")
+			if err != nil {
+				log.Printf("\n%v\n", err)
+			}
+		} else if err != nil {
+			log.Println("Error checking user stats")
+			log.Printf("\n%v\n", err)
+		} else {
+			parsed := UserProfile{}
+			err = json.Unmarshal([]byte(data), &parsed)
+			if err != nil {
+				log.Printf("\n%v\n", err)
+			}
+			content := "```Markdown\n# == " + parsed.Title + " " + m.Author.Username + " == #\n"
+			content += "* Credits: " + strconv.Itoa(parsed.Credits) + "\n"
+			content += "* Profile: \n> " + parsed.Profile + "\n```"
+			message := emotes.LookUpThis(content)
+			_, err = s.ChannelMessageSend(m.ChannelID, message)
+			if err != nil {
+				log.Printf("\n%v\n", err)
+			}
 		}
 	}
 }

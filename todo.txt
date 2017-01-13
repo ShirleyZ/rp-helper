@@ -2,11 +2,9 @@
 
 [ ] Make it handle if server isn't up
 
-[x] Clean up user creation
-		* you can keep creating new users even if they aren't users in the channel DB
-		[x] Make registration through pms
-		[x] Make regi errors give users useful info
-
+[ ] Make $stats commands work by id instead of username
+		[ ] $transfer @user 123 should be a ping to alert them
+		[ ] 
 
 [ ] Make it add credits to user
 		[ ] Make it closed off, or only admins have permission
@@ -16,4 +14,5 @@
 [ ] Allow people to set their own profile text
 
 [ ] Wrap user profile card in a functinon
+
 [ ] Pull out actions into module
