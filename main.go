@@ -99,6 +99,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		cmd_register(s, m)
 	}
 
+	// Tags
+	if m.Content == CMD_PREFIX+"t bodyhorror" {
+		_, err := s.ChannelMessageSend(m.ChannelID, "**BODY HORROR WARNING**")
+		if err != nil {
+			log.Printf("\n%v\n", err)
+		}
+	}
+
+	// Halp
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"help") {
+		cmd_help(s, m)
+	}
+
 	// see profile stats
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"stats") {
 		cmd_stats(s, m)

@@ -114,6 +114,27 @@ func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
 	log.Println("=== End command")
 }
 
+func cmd_help(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.Content == CMD_PREFIX+"help" {
+		message := "*Hello! Here are the list of things I am able to help you with!*"
+		message += "\n```Markdown"
+		message += "\n# == Commands List == #"
+		message += "\n== Users"
+		message += "\no $register - create an account with Scrivener Nibb"
+		message += "\no $stats - check your stats"
+		message += "\no $roll #d# <action> - roll to make an action eg roll 1d20 to party"
+		message += "\no $setprofile <text> - set your profile text"
+		message += "```"
+		_, err := s.ChannelMessageSend(m.ChannelID, message)
+		if err != nil {
+			fmt.Println("!!roll: Channel msg send unsuccessful")
+			log.Printf("\n%v\n", err)
+		}
+	} else {
+		// Parse for what you need help w/
+	}
+}
+
 func cmd_roll(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Print("Rolling")
 	result, err := dice.Roll(m.Content[len(CMD_PREFIX+"roll"):])
