@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	// "errors"
 	"fmt"
 	"log"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +18,33 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func cmd_cookie(s *discordgo.Session, m *discordgo.MessageCreate) {
+	fmt.Println("=== Executing cmd: cookie")
+	// Parse command for target
+	r, err := regexp.Compile("[0-9]+")
+	if err != nil {
+		log.Println("Regexp unsuccessful init")
+	}
+	recipientId := r.Find([]byte(m.Content))
+	log.Printf("Receiver: %s", recipientId)
+
+	giverId := m.Author.ID
+	amount := 1
+
+	args := strings.Split(m.Content, " ")
+	if len(args) == 3 {
+		amount, _ = strconv.Atoi(args[2])
+	}
+
+	err = profile.GiveCookie(string(giverId), string(recipientId), amount)
+	if err != nil {
+		_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
+	} else {
+		_, err = s.ChannelMessageSend(m.ChannelID, "Success")
+	}
+
+}
+
 func cmd_credit(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Println("=== Executing cmd: credit")
 	// Parse arguments [who, amount]
@@ -26,6 +55,7 @@ func cmd_credit(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Printf("\n%v\n", err)
 	}
 	receiverName := ""
+
 	if len(args) > 3 {
 		for i := 1; i < len(args)-1; i++ {
 			receiverName += args[i]
@@ -37,8 +67,7 @@ func cmd_credit(s *discordgo.Session, m *discordgo.MessageCreate) {
 		receiverName = args[1]
 	}
 
-	log.Printf("\nReceiver Name\n%+v\n", receiverName)
-	log.Printf("\nAmount\n%d\n", amount)
+	log.Printf("Giving %+v %d credits", receiverName, amount)
 
 	err = profile.AddCredits(m.Author.ID, receiverName, amount)
 	if err != nil {
@@ -58,7 +87,7 @@ func cmd_earnCredits(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 	amount := rand.Intn(9) + 1
-	log.Printf("\nEarning cash money: %v", amount)
+	log.Printf("%v earned %v credits", m.Author.Username, amount)
 	_ = profile.AddCredits(m.Author.ID, m.Author.Username, amount)
 }
 
@@ -116,15 +145,7 @@ func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func cmd_help(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Content == CMD_PREFIX+"help" {
-		message := "*Hello! Here are the list of things I am able to help you with!*"
-		message += "\n```Markdown"
-		message += "\n# == Commands List == #"
-		message += "\n== Users"
-		message += "\no $register - create an account with Scrivener Nibb"
-		message += "\no $stats - check your stats"
-		message += "\no $roll #d# <action> - roll to make an action eg roll 1d20 to party"
-		message += "\no $setprofile <text> - set your profile text"
-		message += "```"
+		message := msg_help()
 		_, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
 			fmt.Println("!!roll: Channel msg send unsuccessful")
@@ -187,7 +208,6 @@ func cmd_setProfile(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func cmd_stats(s *discordgo.Session, m *discordgo.MessageCreate) {
-	var checkUser string
 	if m.Content != CMD_PREFIX+"stats" {
 		_, err := s.ChannelMessageSend(m.ChannelID, "This feature is currently disabled")
 		if err != nil {
@@ -195,9 +215,8 @@ func cmd_stats(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		// checkUser = m.Content[len(CMD_PREFIX+"stats "):]
 	} else if m.Content == CMD_PREFIX+"stats" {
-		checkUser = m.Author.Username
 
-		data, err := profile.CheckStats(m.Author.ID, checkUser)
+		data, err := profile.CheckStats(m.Author.ID)
 		if err != nil && err.Error() == "No user with that name found" {
 			_, err = s.ChannelMessageSend(m.ChannelID, "I don't seem to have your record on file. Please message me to $register.")
 			if err != nil {
@@ -212,9 +231,7 @@ func cmd_stats(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if err != nil {
 				log.Printf("\n%v\n", err)
 			}
-			content := "```Markdown\n# == " + parsed.Title + " " + m.Author.Username + " == #\n"
-			content += "* Credits: " + strconv.Itoa(parsed.Credits) + "\n"
-			content += "* Profile: \n> " + parsed.Profile + "\n```"
+			content := msg_profile(parsed, m)
 			message := emotes.LookUpThis(content)
 			_, err = s.ChannelMessageSend(m.ChannelID, message)
 			if err != nil {
@@ -222,6 +239,26 @@ func cmd_stats(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 	}
+}
+
+func cmd_tags(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.Content == CMD_PREFIX+"t bodyhorror" {
+		_, err := s.ChannelMessageSend(m.ChannelID, "**BODY HORROR WARNING**")
+		if err != nil {
+			log.Printf("\n%v\n", err)
+		}
+	} else if m.Content == CMD_PREFIX+"t confirmed" {
+		_, err := s.ChannelMessageSend(m.ChannelID, "**CONFIRMED**")
+		if err != nil {
+			log.Printf("\n%v\n", err)
+		}
+	} else if m.Content == CMD_PREFIX+"t banned" {
+		_, err := s.ChannelMessageSend(m.ChannelID, "**BANNED**")
+		if err != nil {
+			log.Printf("\n%v\n", err)
+		}
+	}
+
 }
 
 func cmd_thisM(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -258,4 +295,29 @@ func cmd_thisM(s *discordgo.Session, m *discordgo.MessageCreate) {
 		fmt.Println("!thism: Channel msg send unsuccessful")
 		log.Printf("\n%v\n", err)
 	}
+}
+
+func msg_help() string {
+	message := "*Hello! Here are the list of things I am able to help you with!*"
+	message += "\n```Markdown"
+	message += "\n# == Commands List == #"
+	message += "\n== User account"
+	message += "\no $register - create an account with Scrivener Nibb"
+	message += "\no $stats - check your stats"
+	message += "\no $setprofile <text> - set your profile text"
+	message += "\n== Funsies"
+	message += "\no $cookie @<user> <?amount>- Buy a cookie for the pinged user (cookies cost 20). Amount is optional"
+	message += "\no $roll #d# <action> - roll to make an action eg roll 1d20 to party"
+	message += "```"
+
+	return message
+}
+func msg_profile(userInfo UserProfile, m *discordgo.MessageCreate) string {
+	content := "```Markdown\n# == " + userInfo.Title + " " + m.Author.Username + " == #\n"
+	content += "* Credits: " + strconv.Itoa(userInfo.Credits) + "\n"
+	content += "* Profile: \n> " + userInfo.Profile + "\n"
+	content += "# ==== #\n"
+	content += "* Cookies: " + strconv.Itoa(userInfo.Cookies) + "\n"
+	content += "```"
+	return content
 }

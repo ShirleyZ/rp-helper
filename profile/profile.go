@@ -4,7 +4,10 @@ import (
 	// "github.com/bwmarrin/discordgo"
 	// "encoding/json"
 	// "../errors"
+	"encoding/json"
 	"errors"
+	"github.com/gorilla/Schema"
+	"html"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,7 +16,11 @@ import (
 	"strings"
 )
 
+const COOKIE_COST = 20
+
 type UserData struct {
+	Cookies  int
+	Id       string
 	Username string
 	Credits  int
 	Profile  string
@@ -26,7 +33,7 @@ func AddCredits(id string, username string, amount int) error {
 
 	sendBody, err := url.ParseQuery("username=" + username + "&amount=" + strconv.Itoa(amount) + "&id=" + id)
 	if err != nil {
-		log.Println("\nwewedwe\n")
+		log.Println("Cannot parse query")
 		log.Fatal(err)
 	}
 	resp, err := http.PostForm(API_ENDPOINT+"credits/add/", sendBody)
@@ -46,11 +53,11 @@ func AddCredits(id string, username string, amount int) error {
 	}
 }
 
-func CheckStats(id string, username string) (string, error) {
-	username = strings.ToLower(username)
-	log.Printf("=== Checking status for: %s (%s)", username, id)
+func CheckStats(id string) (string, error) {
+	// username = strings.ToLower(username)
+	log.Printf("=== Checking status for: %s", id)
 
-	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username + "&id=" + id)
+	resp, err := http.Get(API_ENDPOINT + "find/?id=" + id)
 	if err != nil {
 		log.Println("Unable to hit GET find/?name=")
 		log.Fatal(err)
@@ -60,7 +67,7 @@ func CheckStats(id string, username string) (string, error) {
 		log.Println("Unable to read response body")
 		log.Fatal(err)
 	}
-	log.Printf("\n%s\n", body)
+	log.Printf("%s", body)
 
 	if string(body) == ERR_NOUSER {
 		log.Println("User doesn't exist.")
@@ -75,6 +82,56 @@ func CheckStats(id string, username string) (string, error) {
 
 // 	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username)
 // }
+
+func GiveCookie(giverId string, recipientId string, amount int) error {
+	log.Println("== Giving Cookie ==")
+	log.Printf("From: (%s) To: (%s)", giverId, recipientId)
+
+	// Get giver info
+	data, err := CheckStats(giverId)
+	giverInfo := UserData{}
+	err = json.Unmarshal([]byte(data), &giverInfo)
+	if err != nil {
+		log.Printf("\n%v\n", err)
+	}
+	log.Printf("GiverInfo: %+v", giverInfo)
+
+	// deduct amount from giver
+	if giverInfo.Credits < COOKIE_COST*amount {
+		return errors.New("Not enough credits")
+	} else {
+		giverInfo.Credits -= COOKIE_COST * amount
+
+		// Update giver info
+		sendInfo := url.Values{}
+		encoder := schema.NewEncoder()
+		err = encoder.Encode(giverInfo, sendInfo)
+		_, err = http.PostForm(API_ENDPOINT+"profile/update/", sendInfo)
+		if err != nil {
+			return errors.New("Unsuccessful credit deduct")
+		}
+
+		// Get recipient info
+		data, err := CheckStats(recipientId)
+		recipInfo := UserData{}
+		err = json.Unmarshal([]byte(data), &recipInfo)
+		if err != nil {
+			log.Printf("Error: %v", err)
+		}
+		log.Printf("RecipInfo: %+v", recipInfo)
+		recipInfo.Cookies += amount
+
+		// Update recipient info
+		sendInfo = url.Values{}
+		err = encoder.Encode(recipInfo, sendInfo)
+		_, err = http.PostForm(API_ENDPOINT+"profile/update/", sendInfo)
+		if err != nil {
+			return errors.New("Unsuccessful cookie give")
+		}
+		return nil
+	}
+
+}
 
 func RegisterUser(id string, username string) (string, error) {
 	username = strings.ToLower(username)
@@ -133,9 +190,10 @@ func RegisterUser(id string, username string) (string, error) {
 func SetProfile(id string, profileBody string) (string, error) {
 	log.Printf("== Registering this user: %s ", id)
 
+	profileBody = html.EscapeString(profileBody)
 	sendBody, err := url.ParseQuery("id=" + id + "&profile=" + profileBody)
 	if err != nil {
-		log.Println("\nwewedwe\n")
+		log.Println("Parse query error")
 		log.Fatal(err)
 	}
 	resp, err := http.PostForm(API_ENDPOINT+"profile/edit/", sendBody)
@@ -148,7 +206,7 @@ func SetProfile(id string, profileBody string) (string, error) {
 		log.Println("didn't suceess reading the body")
 		log.Fatal(err)
 	}
-	log.Printf("\nBody\n%+v", body)
+	log.Printf("Body: %+v", body)
 	if body == nil {
 		return "", nil
 	} else {

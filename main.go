@@ -11,10 +11,12 @@ import (
 )
 
 type UserProfile struct {
+	Id       string
 	Username string
 	Credits  int
 	Profile  string
 	Title    string
+	Cookies  int
 }
 
 // Variables used for command line parameters
@@ -100,11 +102,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Tags
-	if m.Content == CMD_PREFIX+"t bodyhorror" {
-		_, err := s.ChannelMessageSend(m.ChannelID, "**BODY HORROR WARNING**")
-		if err != nil {
-			log.Printf("\n%v\n", err)
-		}
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"t ") {
+		// if m.Content == CMD_PREFIX+"t bodyhorror" {
+		cmd_tags(s, m)
+
 	}
 
 	// Halp
@@ -119,9 +120,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Add credits command
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"credit") {
-		cmd_credit(s, m)
+		if m.Author.Username == "Dintay" {
+			cmd_credit(s, m)
+		}
 	}
 
+	// Set profile
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"setprofile") {
 		cmd_setProfile(s, m)
 	}
@@ -129,6 +133,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Dice command
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"roll") {
 		cmd_roll(s, m)
+	}
+
+	// Give cookie
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"cookie") {
+		cmd_cookie(s, m)
 	}
 
 	if strings.Contains(m.Content, "well done") {
