@@ -1,0 +1,9 @@
+== Open Bugs ==
+
+[ ] Still gaining credits even if user doesn't exist? Dx
+[ ] Make function that checks if recipients exist for cookie stuff D:
+
+= Closed Bugs =
+[x] limit how many dice you can roll at once >>;;
+[x] Make cookies not happen if there's no proper recipient
+[x] Make the profile strings encoded

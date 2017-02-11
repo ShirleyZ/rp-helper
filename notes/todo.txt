@@ -1,0 +1,48 @@
+== todo
+
+= Bot Basics
+[ ] Afk feature
+[ ] Auto-welcome newbies
+[ ] Make Tag command
+		[ ] Create web interface for adding tags
+		[*] In-chat way of adding tags still needs permissions to be sorted out
+[ ] Seperate info for each server
+[ ] Role assignment
+
+
+= Credit Economy
+[ ] $transfer @user 123 should be a ping to alert them
+[ ] Make it add credits to user
+		[ ] Make it closed off, or only admins have permission
+		[ ] Permissions
+				[ ] Check user roles for allowed thing
+
+= Profile & Stats
+[ ] Make $stats @ping work
+[ ] Make $stats look at nickname
+
+[ ] Create web interface for accessing
+		[ ] Profiles
+		[ ] Tags
+		[ ] Shop? (Need login feature unless it's just a menu)
+
+[ ] Inventory feature
+		[ ] Sql? see how it works w/o it first
+
+= Fun Features
+[ ] Unlocking titles
+		[ ] Custom title is like 20k
+		[ ] Ability to keep track of unlocked titles
+		[ ] Overlord (kess)
+		[ ] Master (kess)
+
+[ ] Every day randomly switches colour
+#C0C0C0
+#CFE5DA
+#E6E3CF
+#F4776A
+#000030
+#349E97
+#4ED4D8
+#EAE2CF
+#FD7E53
