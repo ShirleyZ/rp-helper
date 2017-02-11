@@ -173,7 +173,15 @@ func cmd_help(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func cmd_roll(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Print("Rolling")
-	result, err := dice.Roll(m.Content[len(CMD_PREFIX+"roll"):])
+
+	cmdAlias := ""
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"roll ") {
+		cmdAlias = "$roll"
+	} else if strings.HasPrefix(m.Content, CMD_PREFIX+"r ") {
+		cmdAlias = "$r"
+	}
+
+	result, err := dice.Roll(m.Content[len(cmdAlias):])
 	if err != nil {
 		// Do nothing
 	} else {
@@ -199,10 +207,8 @@ func cmd_setProfile(s *discordgo.Session, m *discordgo.MessageCreate) {
 	cmdAlias := ""
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"profile ") {
 		cmdAlias = "$profile"
-		log.Printf("%s", cmdAlias)
 	} else if strings.HasPrefix(m.Content, CMD_PREFIX+"p ") {
 		cmdAlias = "$p"
-		log.Printf("%s", cmdAlias)
 	}
 
 	if channel.IsPrivate == false {
@@ -225,7 +231,7 @@ func cmd_setProfile(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Printf("\nResult\n%s", result)
 		_, err = s.ChannelMessageSend(sendToThis, "There we are. I've updated your record with your new information.")
 
-		userCard, err := msg_profile(m)
+		userCard, err := msg_profile(m, nil)
 		if err != nil {
 			log.Printf("\n%v\n", err)
 		}
@@ -234,29 +240,54 @@ func cmd_setProfile(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func cmd_stats(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Content != CMD_PREFIX+"stats" {
-		_, err := s.ChannelMessageSend(m.ChannelID, "This feature is currently disabled")
-		if err != nil {
-			log.Printf("\n%v\n", err)
-		}
-		// checkUser = m.Content[len(CMD_PREFIX+"stats "):]
-	} else if m.Content == CMD_PREFIX+"stats" {
+	var err error
+	var content string
+	wrongParams := false
 
-		content, err := msg_profile(m)
-		if err != nil {
-			log.Printf("\n%v\n", err)
-			_, err = s.ChannelMessageSend(m.ChannelID, "Something has gone wrong")
+	args := strings.Split(m.Content, " ")
+
+	if len(args) > 2 {
+		// Do nothing
+		// Invalid params
+	} else {
+		var userId []byte = nil
+		// If you're looking up for someone else
+		if len(args) == 2 {
+			r, err := regexp.Compile("[0-9]+")
+			if err != nil {
+				log.Println("Regexp unsuccessful init")
+			}
+			userId = r.Find([]byte(m.Content))
+			if userId == nil {
+				wrongParams = true
+			}
+		}
+
+		if wrongParams == true {
+			_, err = s.ChannelMessageSend(m.ChannelID, "User incorrectly specified")
 			if err != nil {
 				log.Printf("\n%v\n", err)
 			}
 		} else {
-			message := emotes.LookUpThis(content)
-			_, err = s.ChannelMessageSend(m.ChannelID, message)
-			if err != nil {
-				log.Printf("\n%v\n", err)
-			}
+			content, err = msg_profile(m, userId)
 
+			if err != nil {
+				log.Println("There's an error bud")
+				log.Printf("\n%v\n", err)
+				_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
+				if err != nil {
+					log.Printf("\n%v\n", err)
+				}
+			} else {
+				message := emotes.LookUpThis(content)
+				_, err = s.ChannelMessageSend(m.ChannelID, message)
+				if err != nil {
+					log.Printf("\n%v\n", err)
+				}
+
+			}
 		}
+
 	}
 }
 
@@ -321,20 +352,30 @@ func msg_help() string {
 	message += "\n```Markdown"
 	message += "\n# == Commands List == #"
 	message += "\n== User account"
-	message += "\no $register - create an account with Scrivener Nibb"
-	message += "\no $stats - check your stats"
+	message += "\no $register    - create an account with Scrivener Nibb"
+	message += "\no $stats @<user>  - check your stats"
+	message += "\n  alias: $st"
 	message += "\no $profile <text> - set your profile text"
-	message += "\n  *alias: $p*"
+	message += "\n  alias: $p"
 	message += "\n\n== Funsies"
-	message += "\no $cookie @<user> <?amount>- Buy a cookie for the pinged user (cookies cost 20). Amount is optional"
+	message += "\no $cookie @<user> <?amount> - Buy a cookie for the pinged user (cookies cost 20). Amount is optional"
+	message += "\n  alias: $c"
 	message += "\no $roll #d# <action> - roll to make an action eg roll 1d20 to party (max 100 dice)"
+	message += "\n  alias: $r"
 	message += "```"
 
 	return message
 }
-func msg_profile(m *discordgo.MessageCreate) (string, error) {
-	data, err := profile.CheckStats(m.Author.ID)
+func msg_profile(m *discordgo.MessageCreate, userId []byte) (string, error) {
+	var err error
+	var data string
+	if userId == nil {
+		data, err = profile.CheckStats(m.Author.ID)
+	} else {
+		data, err = profile.CheckStats(string(userId))
+	}
 	if err != nil {
+		log.Printf("Errorrr: %s", err.Error())
 		return "", err
 	}
 	userInfo := UserProfile{}
@@ -344,7 +385,7 @@ func msg_profile(m *discordgo.MessageCreate) (string, error) {
 		return "", nil
 	}
 
-	content := "```Markdown\n# == " + userInfo.Title + " " + m.Author.Username + " == #\n"
+	content := "```Markdown\n# == " + userInfo.Title + " " + strings.Title(userInfo.Username) + " == #\n"
 	content += "* Credits: " + strconv.Itoa(userInfo.Credits) + "\n"
 	content += "* Cookies: " + strconv.Itoa(userInfo.Cookies) + "\n"
 	content += "# ==== #\n"

@@ -112,7 +112,9 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Stats
-	if strings.HasPrefix(m.Content, CMD_PREFIX+"stats") {
+	// if strings.HasPrefix(m.Content, CMD_PREFIX+"stats") || strings.HasPrefix(m.Content, CMD_PREFIX+"st") {
+	if m.Content == CMD_PREFIX+"stats" || m.Content == CMD_PREFIX+"st" ||
+		strings.HasPrefix(m.Content, CMD_PREFIX+"stats") || strings.HasPrefix(m.Content, CMD_PREFIX+"st") {
 		cmd_stats(s, m)
 	}
 
@@ -129,12 +131,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Dice command
-	if strings.HasPrefix(m.Content, CMD_PREFIX+"roll") {
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"roll ") || strings.HasPrefix(m.Content, CMD_PREFIX+"r ") {
 		cmd_roll(s, m)
 	}
 
 	// Give cookie
-	if strings.HasPrefix(m.Content, CMD_PREFIX+"cookie") {
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"cookie ") || strings.HasPrefix(m.Content, CMD_PREFIX+"c ") {
 		cmd_cookie(s, m)
 	}
 
