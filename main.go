@@ -103,9 +103,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Tags
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"t ") {
-		// if m.Content == CMD_PREFIX+"t bodyhorror" {
 		cmd_tags(s, m)
-
 	}
 
 	// Halp
@@ -113,7 +111,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		cmd_help(s, m)
 	}
 
-	// see profile stats
+	// Stats
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"stats") {
 		cmd_stats(s, m)
 	}
@@ -126,7 +124,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Set profile
-	if strings.HasPrefix(m.Content, CMD_PREFIX+"setprofile") {
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"profile ") || strings.HasPrefix(m.Content, CMD_PREFIX+"p ") {
 		cmd_setProfile(s, m)
 	}
 

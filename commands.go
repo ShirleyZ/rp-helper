@@ -18,6 +18,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+const MAX_COOKIES_GIVEN = 9001
+
 func cmd_cookie(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Println("=== Executing cmd: cookie")
 	// Parse command for target
@@ -26,21 +28,34 @@ func cmd_cookie(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Println("Regexp unsuccessful init")
 	}
 	recipientId := r.Find([]byte(m.Content))
-	log.Printf("Receiver: %s", recipientId)
 
 	giverId := m.Author.ID
 	amount := 1
-
 	args := strings.Split(m.Content, " ")
-	if len(args) == 3 {
-		amount, _ = strconv.Atoi(args[2])
-	}
 
-	err = profile.GiveCookie(string(giverId), string(recipientId), amount)
-	if err != nil {
-		_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
+	// Invalid command params
+	if len(args) != 3 {
+		log.Println("Incorrect parameters")
 	} else {
-		_, err = s.ChannelMessageSend(m.ChannelID, "Success")
+		amount, _ = strconv.Atoi(args[2])
+
+		// Invalid input params
+		if string(recipientId) == "" {
+			log.Println("No Recipient")
+		} else if amount <= 0 {
+			log.Println("Less than 0 amount")
+		} else if amount > MAX_COOKIES_GIVEN {
+			log.Println("More than max amount")
+		} else {
+			log.Printf("Sender: %s Receiver: %s Amount: %s", giverId, recipientId, amount)
+
+			err = profile.GiveCookie(string(giverId), string(recipientId), amount)
+			if err != nil {
+				_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
+			} else {
+				_, err = s.ChannelMessageSend(m.ChannelID, "Success")
+			}
+		}
 	}
 
 }
@@ -72,7 +87,7 @@ func cmd_credit(s *discordgo.Session, m *discordgo.MessageCreate) {
 	err = profile.AddCredits(m.Author.ID, receiverName, amount)
 	if err != nil {
 		log.Println("Unsuccessful attemptt o add")
-		_, err = s.ChannelMessageSend(m.ChannelID, "UnSuccess")
+		// Do nothing
 	} else {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Success")
 		if err != nil {
@@ -159,8 +174,10 @@ func cmd_help(s *discordgo.Session, m *discordgo.MessageCreate) {
 func cmd_roll(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Print("Rolling")
 	result, err := dice.Roll(m.Content[len(CMD_PREFIX+"roll"):])
-	result = m.Author.Username + " " + result
-	if err == nil {
+	if err != nil {
+		// Do nothing
+	} else {
+		result = m.Author.Username + " " + result
 		_, err = s.ChannelMessageSend(m.ChannelID, result)
 		if err != nil {
 			fmt.Println("!!roll: Channel msg send unsuccessful")
@@ -179,6 +196,15 @@ func cmd_setProfile(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	sendToThis := m.ChannelID
 
+	cmdAlias := ""
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"profile ") {
+		cmdAlias = "$profile"
+		log.Printf("%s", cmdAlias)
+	} else if strings.HasPrefix(m.Content, CMD_PREFIX+"p ") {
+		cmdAlias = "$p"
+		log.Printf("%s", cmdAlias)
+	}
+
 	if channel.IsPrivate == false {
 		channel, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
@@ -188,22 +214,22 @@ func cmd_setProfile(s *discordgo.Session, m *discordgo.MessageCreate) {
 		sendToThis = channel.ID
 	}
 
-	if len(m.Content) <= len(CMD_PREFIX+"setprofile") {
-		_, err = s.ChannelMessageSend(sendToThis, "Invalid format. Try $setprofile *<your text here>*")
-		if err != nil {
-			log.Printf("\n%v\n", err)
-		}
+	if len(m.Content) <= len(cmdAlias) {
+		// Do nothing
 	} else {
-		profileBody := m.Content[len(CMD_PREFIX+"setprofile "):]
+		profileBody := m.Content[len(cmdAlias+" "):]
 		result, err := profile.SetProfile(m.Author.ID, profileBody)
 		if err != nil {
 			log.Printf("\n%v\n", err)
 		}
 		log.Printf("\nResult\n%s", result)
 		_, err = s.ChannelMessageSend(sendToThis, "There we are. I've updated your record with your new information.")
+
+		userCard, err := msg_profile(m)
 		if err != nil {
 			log.Printf("\n%v\n", err)
 		}
+		_, err = s.ChannelMessageSend(sendToThis, userCard)
 	}
 }
 
@@ -216,27 +242,20 @@ func cmd_stats(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// checkUser = m.Content[len(CMD_PREFIX+"stats "):]
 	} else if m.Content == CMD_PREFIX+"stats" {
 
-		data, err := profile.CheckStats(m.Author.ID)
-		if err != nil && err.Error() == "No user with that name found" {
-			_, err = s.ChannelMessageSend(m.ChannelID, "I don't seem to have your record on file. Please message me to $register.")
-			if err != nil {
-				log.Printf("\n%v\n", err)
-			}
-		} else if err != nil {
-			log.Println("Error checking user stats")
+		content, err := msg_profile(m)
+		if err != nil {
 			log.Printf("\n%v\n", err)
-		} else {
-			parsed := UserProfile{}
-			err = json.Unmarshal([]byte(data), &parsed)
+			_, err = s.ChannelMessageSend(m.ChannelID, "Something has gone wrong")
 			if err != nil {
 				log.Printf("\n%v\n", err)
 			}
-			content := msg_profile(parsed, m)
+		} else {
 			message := emotes.LookUpThis(content)
 			_, err = s.ChannelMessageSend(m.ChannelID, message)
 			if err != nil {
 				log.Printf("\n%v\n", err)
 			}
+
 		}
 	}
 }
@@ -304,20 +323,32 @@ func msg_help() string {
 	message += "\n== User account"
 	message += "\no $register - create an account with Scrivener Nibb"
 	message += "\no $stats - check your stats"
-	message += "\no $setprofile <text> - set your profile text"
-	message += "\n== Funsies"
+	message += "\no $profile <text> - set your profile text"
+	message += "\n  *alias: $p*"
+	message += "\n\n== Funsies"
 	message += "\no $cookie @<user> <?amount>- Buy a cookie for the pinged user (cookies cost 20). Amount is optional"
-	message += "\no $roll #d# <action> - roll to make an action eg roll 1d20 to party"
+	message += "\no $roll #d# <action> - roll to make an action eg roll 1d20 to party (max 100 dice)"
 	message += "```"
 
 	return message
 }
-func msg_profile(userInfo UserProfile, m *discordgo.MessageCreate) string {
+func msg_profile(m *discordgo.MessageCreate) (string, error) {
+	data, err := profile.CheckStats(m.Author.ID)
+	if err != nil {
+		return "", err
+	}
+	userInfo := UserProfile{}
+	err = json.Unmarshal([]byte(data), &userInfo)
+	if err != nil {
+		log.Printf("%v", err)
+		return "", nil
+	}
+
 	content := "```Markdown\n# == " + userInfo.Title + " " + m.Author.Username + " == #\n"
 	content += "* Credits: " + strconv.Itoa(userInfo.Credits) + "\n"
-	content += "* Profile: \n> " + userInfo.Profile + "\n"
-	content += "# ==== #\n"
 	content += "* Cookies: " + strconv.Itoa(userInfo.Cookies) + "\n"
+	content += "# ==== #\n"
+	content += "* Profile: \n> " + userInfo.Profile + "\n"
 	content += "```"
-	return content
+	return content, nil
 }

@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/Schema"
-	"html"
+	// "html"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -85,8 +85,10 @@ func CheckStats(id string) (string, error) {
 
 func GiveCookie(giverId string, recipientId string, amount int) error {
 	log.Println("== Giving Cookie ==")
-	log.Printf("From: (%s) To: (%s)", giverId, recipientId)
-
+	log.Printf("From: (%s) To: (%s) Amount: %d", giverId, recipientId, amount)
+	if amount < 0 {
+		return errors.New("Amount below 0")
+	}
 	// Get giver info
 	data, err := CheckStats(giverId)
 	giverInfo := UserData{}
@@ -190,7 +192,7 @@ func RegisterUser(id string, username string) (string, error) {
 func SetProfile(id string, profileBody string) (string, error) {
 	log.Printf("== Registering this user: %s ", id)
 
-	profileBody = html.EscapeString(profileBody)
+	profileBody = url.QueryEscape(profileBody)
 	sendBody, err := url.ParseQuery("id=" + id + "&profile=" + profileBody)
 	if err != nil {
 		log.Println("Parse query error")
