@@ -20,6 +20,108 @@ import (
 
 const MAX_COOKIES_GIVEN = 9001
 
+type AfkUser struct {
+	Id       string
+	Username string
+	Reason   string
+	AfkStart time.Time
+}
+
+func cmd_afk_check(s *discordgo.Session, m *discordgo.MessageCreate, afkList []AfkUser) []AfkUser {
+	log.Println("=== Executing cmd: afk checking")
+
+	if !strings.HasPrefix(m.Content, CMD_PREFIX) {
+
+		// ********** ALERTING ABT AFK USERS *************
+
+		// Check if any are afk
+		dudesAfk := []int{}
+		authorActive := false
+		authorIndex := 0
+
+		for afkIndex, afkVal := range afkList {
+			for _, user := range m.Mentions {
+				// log.Printf("AFK %s %s compared against MENTIONED %s", afkVal.Id, afkVal.Username, user.ID)
+				if afkVal.Id == user.ID {
+					dudesAfk = append(dudesAfk, afkIndex)
+				}
+			}
+			if afkVal.Id == m.Author.ID {
+				authorActive = true
+				authorIndex = afkIndex
+			}
+		}
+
+		// log.Printf("These pinged people are afk: %+v", dudesAfk)
+
+		// If any show up, create message for afk users
+		// save ids instead, so you can access all the info
+		for _, afIn := range dudesAfk {
+			currUser := afkList[afIn]
+
+			message := "<@" + currUser.Id + "> is AFK. "
+			if currUser.Reason != "No reason given" {
+				message += "Reason: "
+			}
+			message += currUser.Reason
+
+			_, err := s.ChannelMessageSend(m.ChannelID, message)
+			if err != nil {
+				log.Printf("\n%v\n", err)
+			}
+		}
+
+		// ********** REMOVING AFK STATUS *************
+		if authorActive {
+			afkList = append(afkList[:authorIndex], afkList[authorIndex+1:]...)
+			_, err := s.ChannelMessageSend(m.ChannelID, "Welcome back <@"+m.Author.ID+">. AFK status removed.")
+			if err != nil {
+				log.Printf("\n%v\n", err)
+			}
+		}
+	}
+
+	return afkList
+}
+
+func cmd_afk_set(s *discordgo.Session, m *discordgo.MessageCreate, afkList []AfkUser) []AfkUser {
+	fmt.Println("=== Executing cmd: afk setting")
+
+	afkReason := "No reason given"
+	if m.Content == CMD_PREFIX+"afk" {
+		// No reason, do nothing
+	} else {
+		afkReason = m.Content[len(CMD_PREFIX+"afk "):]
+	}
+	newAfk := AfkUser{m.Author.ID, m.Author.Username, afkReason, time.Now()}
+	// log.Printf("%+v", newAfk)
+	log.Printf("%s is afk bec %s", newAfk.Username, newAfk.Reason)
+
+	// Look through current list to see if you need to override old afk
+	found := false
+	index := 0
+	for i, elem := range afkList {
+		if elem.Id == m.Author.ID {
+			found = true
+			index = i
+			elem.Reason = afkReason
+		}
+	}
+
+	if found == false {
+		afkList = append(afkList, newAfk)
+	} else {
+		afkList = append(afkList[:index], afkList[index+1:]...)
+		afkList = append(afkList, newAfk)
+	}
+
+	_, err := s.ChannelMessageSend(m.ChannelID, "AFK set for <@"+newAfk.Id+"> Reason: "+newAfk.Reason)
+	if err != nil {
+		log.Printf("\n%v\n", err)
+	}
+	return afkList
+}
+
 func cmd_cookie(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Println("=== Executing cmd: cookie")
 	// Parse command for target
@@ -380,7 +482,7 @@ func msg_profile(m *discordgo.MessageCreate, userId []byte) (string, error) {
 		log.Printf("Errorrr: %s", err.Error())
 		return "", err
 	}
-	userInfo := UserProfile{}
+	userInfo := profile.UserData{}
 	err = json.Unmarshal([]byte(data), &userInfo)
 	if err != nil {
 		log.Printf("%v", err)

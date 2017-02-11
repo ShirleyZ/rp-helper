@@ -1,7 +1,7 @@
 == todo
 
 = Bot Basics
-[ ] Afk feature
+[x] Afk feature
 [ ] Auto-welcome newbies
 [ ] Make Tag command
 		[ ] Create web interface for adding tags
@@ -18,8 +18,8 @@
 				[ ] Check user roles for allowed thing
 
 = Profile & Stats
-[ ] Make $stats @ping work
-[ ] Make $stats look at nickname
+[x] Make $stats @ping work
+[-] Make $stats look at nickname
 
 [ ] Create web interface for accessing
 		[ ] Profiles

@@ -10,20 +10,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type UserProfile struct {
-	Id       string
-	Username string
-	Credits  int
-	Profile  string
-	Title    string
-	Cookies  int
-}
-
 // Variables used for command line parameters
 var (
 	Token string
 	BotID string
 )
+
+var AfkList []AfkUser = []AfkUser{}
 
 func init() {
 
@@ -92,7 +85,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// dice.Roll("1d5")
 	}
 
-	// ******** RP COMMANDS *********
+	// ******** PROFILE COMMANDS *********
 
 	cmd_earnCredits(s, m)
 
@@ -112,7 +105,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Stats
-	// if strings.HasPrefix(m.Content, CMD_PREFIX+"stats") || strings.HasPrefix(m.Content, CMD_PREFIX+"st") {
 	if m.Content == CMD_PREFIX+"stats" || m.Content == CMD_PREFIX+"st" ||
 		strings.HasPrefix(m.Content, CMD_PREFIX+"stats") || strings.HasPrefix(m.Content, CMD_PREFIX+"st") {
 		cmd_stats(s, m)
@@ -130,14 +122,24 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		cmd_setProfile(s, m)
 	}
 
-	// Dice command
-	if strings.HasPrefix(m.Content, CMD_PREFIX+"roll ") || strings.HasPrefix(m.Content, CMD_PREFIX+"r ") {
-		cmd_roll(s, m)
+	// AFK command
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"afk ") || m.Content == CMD_PREFIX+"afk" {
+		log.Printf("AFKlist is currently this: %+v", AfkList)
+		AfkList = cmd_afk_set(s, m, AfkList[0:])
+		log.Printf("AFKlist now this: %v", AfkList)
 	}
+	AfkList = cmd_afk_check(s, m, AfkList)
 
 	// Give cookie
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"cookie ") || strings.HasPrefix(m.Content, CMD_PREFIX+"c ") {
 		cmd_cookie(s, m)
+	}
+
+	// ******** RP COMMANDS *********
+
+	// Dice command
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"roll ") || strings.HasPrefix(m.Content, CMD_PREFIX+"r ") {
+		cmd_roll(s, m)
 	}
 
 	if strings.Contains(m.Content, "well done") {
