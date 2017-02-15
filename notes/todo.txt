@@ -6,7 +6,7 @@
 [ ] Make Tag command
 		[ ] Create web interface for adding tags
 		[*] In-chat way of adding tags still needs permissions to be sorted out
-[ ] Seperate info for each server
+[ ] Seperate info for each server?
 [ ] Role assignment
 
 

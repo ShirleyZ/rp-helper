@@ -1,5 +1,6 @@
 == Open Bugs ==
 
+[ ] Make afk messages unable to ping people because /zaz u fukkin fuk/
 [ ] Still gaining credits even if user doesn't exist? Dx
 [ ] Make function that checks if recipients exist for cookie stuff D:
 

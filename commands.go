@@ -91,7 +91,12 @@ func cmd_afk_set(s *discordgo.Session, m *discordgo.MessageCreate, afkList []Afk
 	if m.Content == CMD_PREFIX+"afk" {
 		// No reason, do nothing
 	} else {
-		afkReason = m.Content[len(CMD_PREFIX+"afk "):]
+
+		// Parse it to remove any USER PINGS -SIDEEYES ZAZ-
+		betterMessage := m.ContentWithMentionsReplaced()
+
+		afkReason = betterMessage[len(CMD_PREFIX+"afk "):]
+
 	}
 	newAfk := AfkUser{m.Author.ID, m.Author.Username, afkReason, time.Now()}
 	// log.Printf("%+v", newAfk)
