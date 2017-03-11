@@ -27,6 +27,31 @@ type AfkUser struct {
 	AfkStart time.Time
 }
 
+func get_longParam(cmd string) []string {
+	var params := []string
+	for i := range cmd {
+		if (cmd[i] == ' ') {
+			params[0] = cmd[:i]
+			params[1] = cmd[i+1:]
+			return params
+		}
+	}
+}
+
+/* addTag command requirements
+ * - Tag has to be one word
+ */
+func cmd_admin_addtag(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Get the params
+	params := get_longParam(m.Content)
+	
+
+}
+
+func cmd_admin_setCustomPrefix(s *discordgo.Session, m *discordgo.MessageCreate, customPrefix *string) {
+
+}
+
 func cmd_afk_check(s *discordgo.Session, m *discordgo.MessageCreate, afkList []AfkUser) []AfkUser {
 	log.Println("=== Executing cmd: afk checking")
 

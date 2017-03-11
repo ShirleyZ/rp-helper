@@ -17,6 +17,7 @@ var (
 )
 
 var AfkList []AfkUser = []AfkUser{}
+var CustomCmdPrefix string = "-"
 
 func init() {
 
@@ -61,12 +62,17 @@ func main() {
 	return
 }
 
+func isAdmin(user *discordgo.Message.Author) bool {
+	// This is where i'm gonna add a buncha logic
+	return true
+}
+
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Print message to stdout.
-	fmt.Printf("%20s %20s %20s > %s\n", m.ChannelID, time.Now().Format(time.Stamp), m.Author.Username, m.Content)
+	// fmt.Printf("%20s %20s %20s > %s\n", m.ChannelID, time.Now().Format(time.Stamp), m.Author.Username, m.Content)
 
 	// Ignore all messages created by the bot itself
 	if m.Author.ID == BotID {
@@ -83,6 +89,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// If the message is "!test" send the message to server-chatter
 	if m.Content == CMD_PREFIX+"test" {
 		// dice.Roll("1d5")
+	}
+
+	// ********* ADMIN COMMANDS **********
+
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"settag ") {
+		if isAdmin(m.Author) {
+			cmd_admin_addtag(s, m, *CustomCmdPrefix)
+		}
 	}
 
 	// ******** PROFILE COMMANDS *********
