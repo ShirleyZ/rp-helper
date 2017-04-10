@@ -71,9 +71,6 @@ func isAdmin(user *discordgo.Message.Author) bool {
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
-	// Print message to stdout.
-	// fmt.Printf("%20s %20s %20s > %s\n", m.ChannelID, time.Now().Format(time.Stamp), m.Author.Username, m.Content)
-
 	// Ignore all messages created by the bot itself
 	if m.Author.ID == BotID {
 		return
