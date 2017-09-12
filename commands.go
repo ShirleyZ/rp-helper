@@ -27,6 +27,9 @@ type AfkUser struct {
 	AfkStart time.Time
 }
 
+/* Function takes a string and takes every word
+ * separated by a space to be a new argument
+ */
 func get_longParam(cmd string) []string {
 	var params := []string
 	for i := range cmd {

@@ -1,14 +1,31 @@
 == todo
 
+= Priorities
+[ ] Add an entry into SQL db
+
+
+= MySQL port
+[ ] set up vagrant instance with own sql db?
+
 = Bot Basics
 [x] Afk feature
 [ ] Auto-welcome newbies
 [ ] Make Tag command
 		[ ] Create web interface for adding tags
-		[*] In-chat way of adding tags still needs permissions to be sorted out
+		[>] In-chat way of adding tags still needs permissions to be sorted out
 [ ] Seperate info for each server?
 [ ] Role assignment
 
+= Infrastructure/White labelling
+[ ] Have server-specific settings
+
+= Monetisation
+[ ] Travelling merchant bot for $5/mo
+
+= RP Economy/Community
+[ ] Bot to mine/get resources
+		[ ] Maybe toggle to diff modes/workers, and random chance to find items as you chat
+[ ] Seperation of rp helper and idle/chat game
 
 = Credit Economy
 [ ] $transfer @user 123 should be a ping to alert them
@@ -46,3 +63,11 @@
 #4ED4D8
 #EAE2CF
 #FD7E53
+
+
+// To save on per server basis
+// need to lookup guildid for each message
+
+// table: server_settings
+// columns:
+// - 
