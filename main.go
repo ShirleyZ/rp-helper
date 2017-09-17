@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
+	// "time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -62,7 +62,7 @@ func main() {
 	return
 }
 
-func isAdmin(user *discordgo.Message.Author) bool {
+func isAdmin(user *discordgo.User) bool {
 	// This is where i'm gonna add a buncha logic
 	return true
 }
@@ -83,17 +83,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		cmd_thisM(s, m)
 	}
 
-	// If the message is "!test" send the message to server-chatter
+	// Changed as i dev
 	if m.Content == CMD_PREFIX+"test" {
-		// dice.Roll("1d5")
+		m.Content = "$gi <@!166408098368585728> name:A dull, leather book - desc:thinger, alright? - weight: 0.1kg"
+		rpcmd_item_give(s, m)
 	}
 
 	// ********* ADMIN COMMANDS **********
 
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"settag ") {
-		if isAdmin(m.Author) {
-			cmd_admin_addtag(s, m, *CustomCmdPrefix)
-		}
+		// if isAdmin(m.Author) {
+		// 	cmd_admin_addtag(s, m, *CustomCmdPrefix)
+		// }
 	}
 
 	// ******** PROFILE COMMANDS *********
@@ -152,6 +153,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"roll ") || strings.HasPrefix(m.Content, CMD_PREFIX+"r ") {
 		cmd_roll(s, m)
 	}
+
+	// Give item command
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"giveitem") || strings.HasPrefix(m.Content, CMD_PREFIX+"gi") {
+		rpcmd_item_give(s, m)
+	}
+
+	// ******** FUNSIES COMMANDS *********
 
 	if strings.Contains(m.Content, "well done") {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Thank you!")

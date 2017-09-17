@@ -1,17 +1,23 @@
 package main
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
+	// "math/rand"
 	"regexp"
-	"strconv"
+	// "strconv"
+	// "io/ioutil"
+	"errors"
+	"net/http"
+	"net/url"
 	"strings"
-	"time"
+	// "time"
 
 	"github.com/bwmarrin/discordgo"
 )
+
+const API_ENDPOINT = "http://localhost:8080/api/"
 
 // ********** Bot Administration System ********** //
 // - Feature toggles
@@ -44,7 +50,42 @@ func rpcmd_item_discard(s *discordgo.Session, m *discordgo.MessageCreate) {
 func rpcmd_item_give(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Println("=== Executing rpcmd: giveItem")
 
-	params := util_getParams_itemGive(m.Content)
+	params, err := util_getParams_itemGive(m.Content)
+	if err != nil {
+		log.Println("Error: problem getting params for item give")
+		// TODO: handle error
+	}
+
+	fmt.Printf("\nparams:\n%+v\n", params)
+	// TODO: bot-end checking of param
+
+	sendBody, err := url.ParseQuery("userid=" + params["user"] + "&itemparams=" + params["item"])
+	if err != nil {
+		log.Println("Cannot parse query")
+		log.Fatal(err)
+	}
+	url := API_ENDPOINT + "rpcmd/item/give/"
+	fmt.Printf("\nHitting endpoint: %s\n", url)
+	_, err = http.PostForm(url, sendBody)
+	// resp, err := http.PostForm(API_ENDPOINT+"/rpcmd/item/give/", sendBody)
+	if err != nil {
+		log.Println("didn't success the post")
+		log.Printf("%+v", err)
+	}
+	// body, err := ioutil.ReadAll(resp.Body)
+	// if err != nil {
+	// 	log.Println("didn't suceess reading the body")
+	// 	log.Fatal(err)
+	// }
+	// if body == nil {
+	// 	return nil
+	// } else {
+	// 	return errors.New("Unsuccessful")
+	// }
+	// Check who it goes to
+
+	// hit api to do stuff
+
 	// - first argument forced to be recipient
 	// !giveItem @zaz #name A book #desc A really bright and glary book because i'm a good pal #weight 1kg
 	// !giveItem @zaz name:A book / desc: A really bright and glary book because i'm a good pal / weight: 1kg
@@ -86,7 +127,52 @@ func rpcmd_stat_up(s *discordgo.Session, m *discordgo.MessageCreate) {
 // - Admins are able to set up automatic roles when conditions are met
 
 // ********** Utility Functions ********** //
-// - util_<feature>_<featurecommand>
-func util_getParams_itemGive(msg string) []byte {
+// - util_<?feature>_<featurecommand>
+func util_checkIfValidUser(userPing string) error {
+	log.Println("= On checkIfValidUser")
+	log.Printf("\nReceived: %s", userPing)
+	r, err := regexp.Compile("<@![0-9]+>")
+	if err != nil {
+		log.Println("Regexp unsuccessfully created in checkIfValidUser")
+		log.Printf("\nError: \n%+v", err.Error())
+		return errors.New("Invalid regexp")
+	}
 
+	result := r.FindString(userPing)
+	if result == "" {
+		log.Println("A user was not given to checkIfValidUser")
+		return errors.New("Not a user")
+	} else {
+		return nil
+	}
+}
+
+func util_getParams_itemGive(msg string) (map[string]string, error) {
+	var params = make(map[string]string)
+	var err error
+	// Check which command, if it's a shortcut
+	cmdString := ""
+	if strings.HasPrefix(msg, CMD_PREFIX+"giveitem") {
+		cmdString = CMD_PREFIX + "giveitem "
+	} else if strings.HasPrefix(msg, CMD_PREFIX+"gi ") {
+		cmdString = CMD_PREFIX + "gi "
+	}
+
+	msgSansCmd := msg[len(cmdString):]
+
+	index := strings.Index(msgSansCmd, " ")
+	giveTo := msgSansCmd[:index]
+	itemProps := msgSansCmd[index+1:]
+
+	params["user"] = giveTo
+	err = util_checkIfValidUser(giveTo)
+	if err != nil {
+		log.Println("Error: User is not valid")
+		return nil, err
+	}
+
+	// Parsing item commands
+	params["item"] = itemProps
+
+	return params, nil
 }

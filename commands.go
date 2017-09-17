@@ -31,14 +31,15 @@ type AfkUser struct {
  * separated by a space to be a new argument
  */
 func get_longParam(cmd string) []string {
-	var params := []string
+	var params []string
 	for i := range cmd {
-		if (cmd[i] == ' ') {
+		if cmd[i] == ' ' {
 			params[0] = cmd[:i]
 			params[1] = cmd[i+1:]
 			return params
 		}
 	}
+	return params
 }
 
 /* addTag command requirements
@@ -46,9 +47,7 @@ func get_longParam(cmd string) []string {
  */
 func cmd_admin_addtag(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Get the params
-	params := get_longParam(m.Content)
-	
-
+	// params := get_longParam(m.Content)
 }
 
 func cmd_admin_setCustomPrefix(s *discordgo.Session, m *discordgo.MessageCreate, customPrefix *string) {
@@ -530,3 +529,7 @@ func msg_profile(m *discordgo.MessageCreate, userId []byte) (string, error) {
 	content += "```"
 	return content, nil
 }
+
+// func util_tellAuthor(m *discordgo.MessageCreate, userId []byte) (string, error) {
+
+// }
