@@ -1,0 +1,4 @@
+= devlog.txt
+
+[ ] going to check type of stuff
+[ ] checking to see if it's deep nest unmarshaled

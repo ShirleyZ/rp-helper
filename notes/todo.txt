@@ -1,5 +1,8 @@
 == todo
 
+= Bugs
+[ ] Check if user already exists before registering
+
 = Bot Basics
 [x] Afk feature
 [ ] Auto-welcome newbies
@@ -9,6 +12,14 @@
 [ ] Seperate info for each server?
 [ ] Role assignment
 
+===== Freeform RP Bot =====
+= Freeform inventory
+[ ] Nice to have
+		[ ] Bot tells you who you gave it to
+		[ ] Bot tells recipient that they got item
+		[ ] need to parse item params on frontend
+
+===== Casual Chat Bot =====
 = Infrastructure/White labelling
 [ ] Have server-specific settings
 

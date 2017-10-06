@@ -76,19 +76,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// ******** DEV COMMANDS *********
-
-	// Show information about the message sent
-	if m.Content == CMD_PREFIX+"thism" {
-		cmd_thisM(s, m)
-	}
-
-	// Changed as i dev
-	if m.Content == CMD_PREFIX+"test" {
-		m.Content = "$gi <@!166408098368585728> name:A dull, leather book - desc:thinger, alright? - weight: 0.1kg"
-		rpcmd_item_give(s, m)
-	}
-
 	// ********* ADMIN COMMANDS **********
 
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"settag ") {
@@ -118,7 +105,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Stats
 	if m.Content == CMD_PREFIX+"stats" || m.Content == CMD_PREFIX+"st" ||
-		strings.HasPrefix(m.Content, CMD_PREFIX+"stats") || strings.HasPrefix(m.Content, CMD_PREFIX+"st") {
+		strings.HasPrefix(m.Content, CMD_PREFIX+"stats ") || strings.HasPrefix(m.Content, CMD_PREFIX+"st ") {
 		cmd_stats(s, m)
 	}
 
@@ -159,6 +146,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		rpcmd_item_give(s, m)
 	}
 
+	// Check inventory command
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"rpinventory") || strings.HasPrefix(m.Content, CMD_PREFIX+"rpinv") {
+		rpcmd_item_check(s, m)
+	}
+
 	// ******** FUNSIES COMMANDS *********
 
 	if strings.Contains(m.Content, "well done") {
@@ -167,6 +159,24 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			fmt.Println("well done: Channel msg send unsuccessful")
 			log.Printf("\n%v\n", err)
 		}
+	}
+
+	// ******** DEV COMMANDS *********
+
+	// Show information about the message sent
+	if m.Content == CMD_PREFIX+"thism" {
+		cmd_thisM(s, m)
+	}
+
+	// Changed as i dev
+	if m.Content == CMD_PREFIX+"test" {
+		// m.Content = "$gi <@!166408098368585728> name:A dull, leather book - desc:thinger, alright? - weight: 0.1kg"
+		// rpcmd_item_give(s, m)
+	}
+
+	if m.Content == CMD_PREFIX+"test2" {
+		// m.Content = "$gi <@!166408098368585728> name:A pretty, preserved white flower - desc: A white clover plucked from the ground, and then dried for preservation - weight: 0.02kg"
+		// rpcmd_item_give(s, m)
 	}
 
 }
