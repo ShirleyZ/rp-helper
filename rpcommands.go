@@ -109,6 +109,7 @@ func rpcmd_item_check(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func rpcmd_item_discard(s *discordgo.Session, m *discordgo.MessageCreate) {
+	fmt.Println("=== Executing rpcmd: discardItem")
 	// User removes their own item
 }
 
@@ -150,15 +151,16 @@ func rpcmd_item_give(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Printf("%+v", err)
 		return
 	}
-	//message the user success
-	channel, err := s.UserChannelCreate(m.Author.ID)
-	if err != nil {
-		fmt.Println("Unable to create private channel")
-		log.Printf("\n%v\n", err)
-		return
-	}
-	sendToThis := channel.ID
-	_, err = s.ChannelMessageSend(sendToThis, "Item given to "+noPingParams["user"])
+	// //message the user success
+	// channel, err := s.UserChannelCreate(m.Author.ID)
+	// if err != nil {
+	// 	fmt.Println("Unable to create private channel")
+	// 	log.Printf("\n%v\n", err)
+	// 	return
+	// }
+	// sendToThis := channel.ID
+	// _, err = s.ChannelMessageSend(sendToThis, "Item given to "+noPingParams["user"])
+	_, err = s.ChannelMessageSend(m.ChannelID, "Item given to "+noPingParams["user"][1:])
 
 }
 
@@ -197,7 +199,7 @@ func rpcmd_stat_up(s *discordgo.Session, m *discordgo.MessageCreate) {
 func util_checkIfValidUserPing(userPing string) error {
 	log.Println("= On checkIfValidUser")
 	log.Printf("\nReceived: %s", userPing)
-	r, err := regexp.Compile("<@![0-9]+>")
+	r, err := regexp.Compile("<[@!]+[0-9]+>")
 	if err != nil {
 		log.Println("Regexp unsuccessfully created in checkIfValidUser")
 		log.Printf("\nError: \n%+v", err.Error())

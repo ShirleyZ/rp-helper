@@ -151,6 +151,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		rpcmd_item_check(s, m)
 	}
 
+	// Delete own item command
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"rpidiscard") || strings.HasPrefix(m.Content, CMD_PREFIX+"rpid") {
+		rpcmd_item_discard(s, m)
+	}
+
 	// ******** FUNSIES COMMANDS *********
 
 	if strings.Contains(m.Content, "well done") {
