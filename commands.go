@@ -498,6 +498,8 @@ func msg_help() string {
 	message += "\no $roll #d# <action> - roll to make an action eg roll 1d20 to party"
 	message += "\n                  - Max 100 dice at a time"
 	message += "\n                  - alias: $r"
+	message += "\n\n== Features"
+	message += "\no $rpihelp				- Gives a list of freeform inventory commands"
 	message += "```"
 
 	return message

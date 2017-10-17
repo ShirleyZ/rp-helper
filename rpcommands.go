@@ -48,9 +48,17 @@ func rpcmd_item_check(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Println("=== Executing rpcmd: checkInventory")
 	userId := m.Author.ID
 
+	// Getting guild id
+	guildId, err := util_getGuildId(s, m)
+	if err != nil {
+		log.Println("Cannot get channelid")
+		log.Printf("Error: %+v", err.Error())
+		return
+	}
+
 	// Do a lookup of their own stuff
 	endpoint := API_ENDPOINT + "rpcmd/item/check/"
-	sendBody, err := url.ParseQuery("userid=" + userId)
+	sendBody, err := url.ParseQuery("userid=" + userId + "&guildid=" + guildId)
 	if err != nil {
 		log.Println("Cannot parse query")
 		log.Printf("Error: %+v", err.Error())
@@ -88,17 +96,23 @@ func rpcmd_item_check(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	message := "```Markdown\n"
 	message += "*== " + m.Author.Username + "'s Inventory ==*\n\n"
-	for key, value := range userInventory.Items {
-		currItem := value
-		log.Printf("%s: %+v ", key, currItem)
-		message += "# [" + currItem["itemid"] + "] " + currItem["name"] + " #\n"
-		message += "- Description: " + currItem["desc"] + "\n"
-		for propName, propValue := range currItem {
-			if (propName != "itemid") && (propName != "name") && (propName != "desc") {
-				message += "- " + propName + ": " + propValue + "\n"
+
+	if len(userInventory.Items) == 0 {
+		message += "There is nothing here"
+	} else {
+		for key, value := range userInventory.Items {
+			currItem := value
+			log.Printf("%s: %+v ", key, currItem)
+			message += "# [" + currItem["itemid"] + "] " + currItem["name"] + " #\n"
+			message += "- Description: " + currItem["desc"] + "\n"
+			for propName, propValue := range currItem {
+				if (propName != "itemid") && (propName != "name") && (propName != "desc") {
+					message += "- " + propName + ": " + propValue + "\n"
+				}
 			}
 		}
 	}
+
 	message += "```"
 	// Different functions for
 	// brief: id, name only
@@ -111,6 +125,66 @@ func rpcmd_item_check(s *discordgo.Session, m *discordgo.MessageCreate) {
 func rpcmd_item_discard(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Println("=== Executing rpcmd: discardItem")
 	// User removes their own item
+
+	numParams := strings.Count(m.Content, " ")
+	if numParams < 1 {
+		log.Println("Error: Not enough params")
+		return
+	}
+	// Get user id
+	userId := m.Author.ID
+	guildId, err := util_getGuildId(s, m)
+	if err != nil {
+		log.Println("Error: " + err.Error())
+		return
+	}
+
+	// Get item name or id
+	cmdParam := ""
+	if strings.HasPrefix(m.Content, "$di ") {
+		cmdParam = m.Content[len("$di "):]
+	} else if strings.HasPrefix(m.Content, "$discarditem ") {
+		cmdParam = m.Content[len("$discarditem "):]
+	}
+	cmdParam = strings.ToUpper(cmdParam)
+	log.Printf("cmdParam: %s", cmdParam)
+
+	itemId := strings.Trim(cmdParam, " ")
+	log.Printf("itemId: %s", itemId)
+	// Hit endpoint
+	sendBody, err := url.ParseQuery("userid=" + userId + "&itemid=" + itemId + "&guildid=" + guildId)
+	if err != nil {
+		log.Println("Cannot parse query")
+		log.Printf("Error: %+v", err.Error())
+		return
+	}
+	url := API_ENDPOINT + "rpcmd/item/discard/"
+	fmt.Printf("\nHitting endpoint: %s\n", url)
+	resp, err := http.PostForm(url, sendBody)
+	if err != nil {
+		log.Println("didn't success the post")
+		log.Printf("%+v", err)
+		return
+	}
+	// TODO: give appropriate error messages
+	defer resp.Body.Close()
+
+	message := ""
+	if resp.StatusCode == 200 { // OK
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		bodyString := string(bodyBytes)
+		log.Printf("resp string: %s", bodyString)
+		if bodyString == "OK" {
+			message = "Item " + itemId + " has been discarded"
+		} else if bodyString != "" {
+			message = bodyString
+		}
+	}
+	log.Printf("resp body: %+v", resp.Body)
+
+	if message != "" {
+		_, err = s.ChannelMessageSend(m.ChannelID, message)
+	}
 }
 
 func rpcmd_item_give(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -137,7 +211,14 @@ func rpcmd_item_give(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Printf("\nnopingparams:\n%+v\n", noPingParams)
 	// TODO: bot-end checking of param
 
-	sendBody, err := url.ParseQuery("userid=" + params["user"] + "&itemparams=" + noPingParams["item"])
+	guildId, err := util_getGuildId(s, m)
+	if err != nil {
+		log.Println("Cannot get channelid")
+		log.Printf("Error: %+v", err.Error())
+		return
+	}
+
+	sendBody, err := url.ParseQuery("userid=" + params["user"] + "&itemparams=" + noPingParams["item"] + "&guildid=" + guildId)
 	if err != nil {
 		log.Println("Cannot parse query")
 		log.Printf("Error: %+v", err.Error())
@@ -145,23 +226,21 @@ func rpcmd_item_give(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	url := API_ENDPOINT + "rpcmd/item/give/"
 	fmt.Printf("\nHitting endpoint: %s\n", url)
-	_, err = http.PostForm(url, sendBody)
+	thing, err := http.PostForm(url, sendBody)
 	if err != nil {
 		log.Println("didn't success the post")
 		log.Printf("%+v", err)
 		return
 	}
-	// //message the user success
-	// channel, err := s.UserChannelCreate(m.Author.ID)
-	// if err != nil {
-	// 	fmt.Println("Unable to create private channel")
-	// 	log.Printf("\n%v\n", err)
-	// 	return
-	// }
-	// sendToThis := channel.ID
-	// _, err = s.ChannelMessageSend(sendToThis, "Item given to "+noPingParams["user"])
-	_, err = s.ChannelMessageSend(m.ChannelID, "Item given to "+noPingParams["user"][1:])
 
+	log.Printf("thing: %+v", thing)
+	_, err = s.ChannelMessageSend(m.ChannelID, "Item given to "+noPingParams["user"][1:])
+}
+
+func rpcmd_item_help(s *discordgo.Session, m *discordgo.MessageCreate) {
+	fmt.Println("=== Executing rpcmd: helpItem")
+	message := msg_rpcmd_help()
+	_, _ = s.ChannelMessageSend(m.ChannelID, message)
 }
 
 // ********** Statistics System ********** //
@@ -196,6 +275,26 @@ func rpcmd_stat_up(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // ********** Utility Functions ********** //
 // - util_<?feature>_<featurecommand>
+
+func msg_rpcmd_help() string {
+	message := "*Here is what you can do with the freeform inventory system*"
+	message += "\n```Markdown"
+	message += "\n# == Commands List == #"
+	message += "\n== User account"
+	message += "\no $rpinventory    - Check your inventory"
+	message += "\n                  - alias: $rpinv"
+	message += "\no $giveitem @<user> <params> - Create an item and give it to a user"
+	message += "\n                  - alias: $gi"
+	message += "\n                  - params: property:value - property2:value2"
+	message += "\n                  - example: $gi @friend name:A present - description:It is a small white box wrapped in blue ribbon - weight: 0.5kg"
+	message += "\no $discarditem ID# - Remove an item from your own inventory"
+	message += "\n                  - Please use the ID displayed next to the item in your inventory"
+	message += "\n                  - alias: $di"
+	message += "```"
+
+	return message
+}
+
 func util_checkIfValidUserPing(userPing string) error {
 	log.Println("= On checkIfValidUser")
 	log.Printf("\nReceived: %s", userPing)
@@ -213,6 +312,17 @@ func util_checkIfValidUserPing(userPing string) error {
 	} else {
 		return nil
 	}
+}
+
+func util_getGuildId(s *discordgo.Session, m *discordgo.MessageCreate) (string, error) {
+	channelInfo, err := s.Channel(m.ChannelID)
+	if err != nil {
+		log.Println("Cannot get server info")
+		log.Printf("Error: %+v", err.Error())
+		return "", err
+	}
+	guildId := channelInfo.GuildID
+	return guildId, nil
 }
 
 func util_getParams_itemGive(msg string, withPing bool) (map[string]string, error) {

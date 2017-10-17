@@ -1,4 +1,10 @@
 = devlog.txt
 
+= 16 Oct 2017
+[ ] display of rpinv needs to stop if there's nothing
+[ ] save new users for rpinv with nil
+
+
+= what?
 [ ] going to check type of stuff
 [ ] checking to see if it's deep nest unmarshaled

@@ -141,6 +141,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		cmd_roll(s, m)
 	}
 
+	// Help item command
+	if m.Content == CMD_PREFIX+"rpihelp" {
+		rpcmd_item_help(s, m)
+	}
+
 	// Give item command
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"giveitem") || strings.HasPrefix(m.Content, CMD_PREFIX+"gi") {
 		rpcmd_item_give(s, m)
@@ -152,7 +157,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// Delete own item command
-	if strings.HasPrefix(m.Content, CMD_PREFIX+"rpidiscard") || strings.HasPrefix(m.Content, CMD_PREFIX+"rpid") {
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"discarditem") || strings.HasPrefix(m.Content, CMD_PREFIX+"di") {
 		rpcmd_item_discard(s, m)
 	}
 
@@ -175,13 +180,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Changed as i dev
 	if m.Content == CMD_PREFIX+"test" {
-		// m.Content = "$gi <@!166408098368585728> name:A dull, leather book - desc:thinger, alright? - weight: 0.1kg"
-		// rpcmd_item_give(s, m)
+		m.Content = "$gi <@" + m.Author.ID + "> name:A dull, leather book - desc:thinger, alright? - weight: 0.1kg"
+		rpcmd_item_give(s, m)
 	}
 
 	if m.Content == CMD_PREFIX+"test2" {
-		// m.Content = "$gi <@!166408098368585728> name:A pretty, preserved white flower - desc: A white clover plucked from the ground, and then dried for preservation - weight: 0.02kg"
-		// rpcmd_item_give(s, m)
+		m.Content = "$gi <@" + m.Author.ID + "> name:A pretty, preserved white flower - desc: A white clover plucked from the ground, and then dried for preservation - weight: 0.02kg"
+		rpcmd_item_give(s, m)
 	}
 
 }
