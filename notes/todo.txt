@@ -14,10 +14,8 @@
 
 ===== Freeform RP Bot =====
 = Freeform inventory
-[ ] Nice to have
-		[ ] Bot tells you who you gave it to
-		[ ] Bot tells recipient that they got item
-		[ ] need to parse item params on frontend
+[ ] Group delete items
+[ ] Some way to prevent spamming?
 
 ===== Casual Chat Bot =====
 = Infrastructure/White labelling

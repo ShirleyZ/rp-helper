@@ -532,6 +532,13 @@ func msg_profile(m *discordgo.MessageCreate, userId []byte) (string, error) {
 	return content, nil
 }
 
-// func util_tellAuthor(m *discordgo.MessageCreate, userId []byte) (string, error) {
-
-// }
+func util_getGuildId(s *discordgo.Session, m *discordgo.MessageCreate) (string, error) {
+	channelInfo, err := s.Channel(m.ChannelID)
+	if err != nil {
+		log.Println("Cannot get server info")
+		log.Printf("Error: %+v", err.Error())
+		return "", err
+	}
+	guildId := channelInfo.GuildID
+	return guildId, nil
+}

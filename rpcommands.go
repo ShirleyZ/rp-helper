@@ -104,9 +104,8 @@ func rpcmd_item_check(s *discordgo.Session, m *discordgo.MessageCreate) {
 			currItem := value
 			log.Printf("%s: %+v ", key, currItem)
 			message += "# [" + currItem["itemid"] + "] " + currItem["name"] + " #\n"
-			message += "- Description: " + currItem["desc"] + "\n"
 			for propName, propValue := range currItem {
-				if (propName != "itemid") && (propName != "name") && (propName != "desc") {
+				if (propName != "itemid") && (propName != "name") {
 					message += "- " + propName + ": " + propValue + "\n"
 				}
 			}
@@ -141,10 +140,10 @@ func rpcmd_item_discard(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Get item name or id
 	cmdParam := ""
-	if strings.HasPrefix(m.Content, "$di ") {
-		cmdParam = m.Content[len("$di "):]
-	} else if strings.HasPrefix(m.Content, "$discarditem ") {
-		cmdParam = m.Content[len("$discarditem "):]
+	if strings.HasPrefix(m.Content, "$rpid ") {
+		cmdParam = m.Content[len("$rpid "):]
+	} else if strings.HasPrefix(m.Content, "$rpidiscard ") {
+		cmdParam = m.Content[len("$rpidiscard "):]
 	}
 	cmdParam = strings.ToUpper(cmdParam)
 	log.Printf("cmdParam: %s", cmdParam)
@@ -166,7 +165,6 @@ func rpcmd_item_discard(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Printf("%+v", err)
 		return
 	}
-	// TODO: give appropriate error messages
 	defer resp.Body.Close()
 
 	message := ""
@@ -201,14 +199,18 @@ func rpcmd_item_give(s *discordgo.Session, m *discordgo.MessageCreate) {
 	noMentions := m.ContentWithMentionsReplaced()
 	log.Printf("NO MNTIONS: %s", noMentions)
 	log.Printf("Params: %+v", params)
-	noPingParams, err := util_getParams_itemGive(noMentions, false)
+
+	recipientUsername := ""
+	if len(m.Mentions) > 0 {
+		recipientUsername = m.Mentions[0].Username
+	}
+
 	if err != nil {
 		log.Println("Error: problem getting params for item give")
 		return
 		// TODO: handle error
 	}
 	fmt.Printf("\nparams:\n%+v\n", params)
-	fmt.Printf("\nnopingparams:\n%+v\n", noPingParams)
 	// TODO: bot-end checking of param
 
 	guildId, err := util_getGuildId(s, m)
@@ -218,7 +220,7 @@ func rpcmd_item_give(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	sendBody, err := url.ParseQuery("userid=" + params["user"] + "&itemparams=" + noPingParams["item"] + "&guildid=" + guildId)
+	sendBody, err := url.ParseQuery("userid=" + params["user"] + "&itemparams=" + params["item"] + "&guildid=" + guildId)
 	if err != nil {
 		log.Println("Cannot parse query")
 		log.Printf("Error: %+v", err.Error())
@@ -234,7 +236,7 @@ func rpcmd_item_give(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	log.Printf("thing: %+v", thing)
-	_, err = s.ChannelMessageSend(m.ChannelID, "Item given to "+noPingParams["user"][1:])
+	_, err = s.ChannelMessageSend(m.ChannelID, "Item given to "+recipientUsername)
 }
 
 func rpcmd_item_help(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -283,13 +285,13 @@ func msg_rpcmd_help() string {
 	message += "\n== User account"
 	message += "\no $rpinventory    - Check your inventory"
 	message += "\n                  - alias: $rpinv"
-	message += "\no $giveitem @<user> <params> - Create an item and give it to a user"
-	message += "\n                  - alias: $gi"
+	message += "\no $rpigive @<user> <params> - Create an item and give it to a user"
+	message += "\n                  - alias: $rpig"
 	message += "\n                  - params: property:value - property2:value2"
 	message += "\n                  - example: $gi @friend name:A present - description:It is a small white box wrapped in blue ribbon - weight: 0.5kg"
-	message += "\no $discarditem ID# - Remove an item from your own inventory"
+	message += "\no $rpidiscard ID# - Remove an item from your own inventory"
 	message += "\n                  - Please use the ID displayed next to the item in your inventory"
-	message += "\n                  - alias: $di"
+	message += "\n                  - alias: $rpid"
 	message += "```"
 
 	return message
@@ -330,10 +332,10 @@ func util_getParams_itemGive(msg string, withPing bool) (map[string]string, erro
 	var err error
 	// Check which command, if it's a shortcut
 	cmdString := ""
-	if strings.HasPrefix(msg, CMD_PREFIX+"giveitem") {
-		cmdString = CMD_PREFIX + "giveitem "
-	} else if strings.HasPrefix(msg, CMD_PREFIX+"gi ") {
-		cmdString = CMD_PREFIX + "gi "
+	if strings.HasPrefix(msg, CMD_PREFIX+"rpigive") {
+		cmdString = CMD_PREFIX + "rpigive "
+	} else if strings.HasPrefix(msg, CMD_PREFIX+"rpig ") {
+		cmdString = CMD_PREFIX + "rpig "
 	}
 
 	log.Printf("Got this msg: %s", msg)
