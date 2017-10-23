@@ -251,7 +251,7 @@ func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
 	log.Println("Getting response channel...")
 	sendToThis := m.ChannelID
 
-	if channel.IsPrivate == false {
+	if channel.Type == discordgo.ChannelTypeDM {
 		channel, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 			fmt.Println("Unable to create private channel")
@@ -345,7 +345,7 @@ func cmd_setProfile(s *discordgo.Session, m *discordgo.MessageCreate) {
 		cmdAlias = "$p"
 	}
 
-	if channel.IsPrivate == false {
+	if channel.Type != discordgo.ChannelTypeDM {
 		channel, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 			fmt.Println("Unable to create private channel")
@@ -453,26 +453,27 @@ func cmd_thisM(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Printf("\n%v\n", err)
 	}
 
-	msg := "Sent: " + m.Timestamp + "\n"
+	msg := ""
+	// msg += "Sent: " + m.Timestamp + "\n"
 	msg += "Channel: " + channel.Name + "(" + m.ChannelID + ")\n"
-	msg += "isPrivate: " + fmt.Sprintf("%t", channel.IsPrivate) + "\n"
-	if channel.IsPrivate == true {
-		msg += "**== PM details ==**\n"
-		msg += "Recipient: " + channel.Recipient.Username + "\n"
-		msg += "Author: " + m.Author.Username + "(" + m.Author.ID + ")\n"
-		log.Printf("\n%+v\n", m.Author)
-	} else {
-		msg += "**== Channel details ==**\n"
-		permissions, err := s.State.UserChannelPermissions(m.Author.ID, m.ChannelID)
-		log.Printf("\n%v\n", permissions)
-		// member, err := s.GuildMember(channel.GuildID, m.Author.ID)
-		if err != nil {
-			fmt.Printf(CMD_PREFIX + "thism cannot find guild member")
-			log.Printf("\n%v\n", err)
-		}
-		msg += "Server: (" + channel.GuildID + ")\n"
-		// msg += fmt.Sprintf("Author roles: %+v \n", member.Roles)
-	}
+	msg += "Type: " + fmt.Sprintf("%i", channel.Type) + "\n"
+	// if channel.IsPrivate == true {
+	// 	msg += "**== PM details ==**\n"
+	// 	msg += "Recipient: " + channel.Recipient.Username + "\n"
+	// 	msg += "Author: " + m.Author.Username + "(" + m.Author.ID + ")\n"
+	// 	log.Printf("\n%+v\n", m.Author)
+	// } else {
+	// 	msg += "**== Channel details ==**\n"
+	// 	permissions, err := s.State.UserChannelPermissions(m.Author.ID, m.ChannelID)
+	// 	log.Printf("\n%v\n", permissions)
+	// 	// member, err := s.GuildMember(channel.GuildID, m.Author.ID)
+	// 	if err != nil {
+	// 		fmt.Printf(CMD_PREFIX + "thism cannot find guild member")
+	// 		log.Printf("\n%v\n", err)
+	// 	}
+	// 	msg += "Server: (" + channel.GuildID + ")\n"
+	// 	// msg += fmt.Sprintf("Author roles: %+v \n", member.Roles)
+	// }
 
 	_, err = s.ChannelMessageSend(m.ChannelID, msg)
 	if err != nil {
