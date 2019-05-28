@@ -1,2 +1,2 @@
 # !/bin/bash
-go build main.go commands.go constants.go
+go build main.go commands.go constants.go rpcommands.go

@@ -1,5 +1,12 @@
 == Open Bugs ==
 
+
+= RPInventory
+[*] Can't give items to people with multiple words in their user name
+
+
+= Social fun
+[>] Able to ping users within profiles if escapes
 [ ] Make afk messages unable to ping people because /zaz u fukkin fuk/
 [ ] Still gaining credits even if user doesn't exist? Dx
 [ ] Make function that checks if recipients exist for cookie stuff D:

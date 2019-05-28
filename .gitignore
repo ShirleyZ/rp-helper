@@ -2,3 +2,5 @@
 main
 ideas.txt
 startbot.sh
+npm-debug.log
+*.log

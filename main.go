@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
+	// "time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -62,7 +62,7 @@ func main() {
 	return
 }
 
-func isAdmin(user *discordgo.Message.Author) bool {
+func isAdmin(user *discordgo.User) bool {
 	// This is where i'm gonna add a buncha logic
 	return true
 }
@@ -76,24 +76,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// ******** DEV COMMANDS *********
-
-	// Show information about the message sent
-	if m.Content == CMD_PREFIX+"thism" {
-		cmd_thisM(s, m)
-	}
-
-	// If the message is "!test" send the message to server-chatter
-	if m.Content == CMD_PREFIX+"test" {
-		// dice.Roll("1d5")
-	}
-
 	// ********* ADMIN COMMANDS **********
 
 	if strings.HasPrefix(m.Content, CMD_PREFIX+"settag ") {
-		if isAdmin(m.Author) {
-			cmd_admin_addtag(s, m, *CustomCmdPrefix)
-		}
+		// if isAdmin(m.Author) {
+		// 	cmd_admin_addtag(s, m, *CustomCmdPrefix)
+		// }
 	}
 
 	// ******** PROFILE COMMANDS *********
@@ -117,7 +105,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Stats
 	if m.Content == CMD_PREFIX+"stats" || m.Content == CMD_PREFIX+"st" ||
-		strings.HasPrefix(m.Content, CMD_PREFIX+"stats") || strings.HasPrefix(m.Content, CMD_PREFIX+"st") {
+		strings.HasPrefix(m.Content, CMD_PREFIX+"stats ") || strings.HasPrefix(m.Content, CMD_PREFIX+"st ") {
 		cmd_stats(s, m)
 	}
 
@@ -153,12 +141,52 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		cmd_roll(s, m)
 	}
 
+	// Help item command
+	if m.Content == CMD_PREFIX+"rpihelp" {
+		rpcmd_item_help(s, m)
+	}
+
+	// Give item command
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"rpigive") || strings.HasPrefix(m.Content, CMD_PREFIX+"rpig") {
+		rpcmd_item_give(s, m)
+	}
+
+	// Check inventory command
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"rpinventory") || strings.HasPrefix(m.Content, CMD_PREFIX+"rpinv") {
+		rpcmd_item_check(s, m)
+	}
+
+	// Delete own item command
+	if strings.HasPrefix(m.Content, CMD_PREFIX+"rpidiscard") || strings.HasPrefix(m.Content, CMD_PREFIX+"rpid") {
+		rpcmd_item_discard(s, m)
+	}
+
+	// ******** FUNSIES COMMANDS *********
+
 	if strings.Contains(m.Content, "well done") {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Thank you!")
 		if err != nil {
 			fmt.Println("well done: Channel msg send unsuccessful")
 			log.Printf("\n%v\n", err)
 		}
+	}
+
+	// ******** DEV COMMANDS *********
+
+	// Show information about the message sent
+	if m.Content == CMD_PREFIX+"thism" {
+		cmd_thisM(s, m)
+	}
+
+	// Changed as i dev
+	if m.Content == CMD_PREFIX+"test" {
+		m.Content = "$rpig <@" + m.Author.ID + "> name:A dull, leather book - desc:thinger, alright? - weight: 0.1kg"
+		rpcmd_item_give(s, m)
+	}
+
+	if m.Content == CMD_PREFIX+"test2" {
+		m.Content = "$rpig <@" + m.Author.ID + "> name:A pretty, preserved white flower - desc: A white clover plucked from the ground, and then dried for preservation - weight: 0.02kg"
+		rpcmd_item_give(s, m)
 	}
 
 }

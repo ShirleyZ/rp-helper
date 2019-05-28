@@ -1,11 +1,7 @@
 == todo
 
-= Priorities
-[ ] Add an entry into SQL db
-
-
-= MySQL port
-[ ] set up vagrant instance with own sql db?
+= Bugs
+[ ] Check if user already exists before registering
 
 = Bot Basics
 [x] Afk feature
@@ -16,6 +12,12 @@
 [ ] Seperate info for each server?
 [ ] Role assignment
 
+===== Freeform RP Bot =====
+= Freeform inventory
+[ ] Group delete items
+[ ] Some way to prevent spamming?
+
+===== Casual Chat Bot =====
 = Infrastructure/White labelling
 [ ] Have server-specific settings
 

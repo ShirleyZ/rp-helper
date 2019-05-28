@@ -31,14 +31,15 @@ type AfkUser struct {
  * separated by a space to be a new argument
  */
 func get_longParam(cmd string) []string {
-	var params := []string
+	var params []string
 	for i := range cmd {
-		if (cmd[i] == ' ') {
+		if cmd[i] == ' ' {
 			params[0] = cmd[:i]
 			params[1] = cmd[i+1:]
 			return params
 		}
 	}
+	return params
 }
 
 /* addTag command requirements
@@ -46,9 +47,7 @@ func get_longParam(cmd string) []string {
  */
 func cmd_admin_addtag(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Get the params
-	params := get_longParam(m.Content)
-	
-
+	// params := get_longParam(m.Content)
 }
 
 func cmd_admin_setCustomPrefix(s *discordgo.Session, m *discordgo.MessageCreate, customPrefix *string) {
@@ -252,7 +251,7 @@ func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
 	log.Println("Getting response channel...")
 	sendToThis := m.ChannelID
 
-	if channel.IsPrivate == false {
+	if channel.Type == discordgo.ChannelTypeDM {
 		channel, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 			fmt.Println("Unable to create private channel")
@@ -319,6 +318,8 @@ func cmd_roll(s *discordgo.Session, m *discordgo.MessageCreate) {
 	result, err := dice.Roll(m.Content[len(cmdAlias):])
 	if err != nil {
 		// Do nothing
+		fmt.Println("!!roll: Error executing dice.Roll")
+		log.Printf("\n%v\n", err)
 	} else {
 		result = m.Author.Username + " " + result
 		_, err = s.ChannelMessageSend(m.ChannelID, result)
@@ -346,7 +347,7 @@ func cmd_setProfile(s *discordgo.Session, m *discordgo.MessageCreate) {
 		cmdAlias = "$p"
 	}
 
-	if channel.IsPrivate == false {
+	if channel.Type != discordgo.ChannelTypeDM {
 		channel, err := s.UserChannelCreate(m.Author.ID)
 		if err != nil {
 			fmt.Println("Unable to create private channel")
@@ -454,26 +455,27 @@ func cmd_thisM(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Printf("\n%v\n", err)
 	}
 
-	msg := "Sent: " + m.Timestamp + "\n"
+	msg := ""
+	// msg += "Sent: " + m.Timestamp + "\n"
 	msg += "Channel: " + channel.Name + "(" + m.ChannelID + ")\n"
-	msg += "isPrivate: " + fmt.Sprintf("%t", channel.IsPrivate) + "\n"
-	if channel.IsPrivate == true {
-		msg += "**== PM details ==**\n"
-		msg += "Recipient: " + channel.Recipient.Username + "\n"
-		msg += "Author: " + m.Author.Username + "(" + m.Author.ID + ")\n"
-		log.Printf("\n%+v\n", m.Author)
-	} else {
-		msg += "**== Channel details ==**\n"
-		permissions, err := s.State.UserChannelPermissions(m.Author.ID, m.ChannelID)
-		log.Printf("\n%v\n", permissions)
-		// member, err := s.GuildMember(channel.GuildID, m.Author.ID)
-		if err != nil {
-			fmt.Printf(CMD_PREFIX + "thism cannot find guild member")
-			log.Printf("\n%v\n", err)
-		}
-		msg += "Server: (" + channel.GuildID + ")\n"
-		// msg += fmt.Sprintf("Author roles: %+v \n", member.Roles)
-	}
+	msg += "Type: " + fmt.Sprintf("%i", channel.Type) + "\n"
+	// if channel.IsPrivate == true {
+	// 	msg += "**== PM details ==**\n"
+	// 	msg += "Recipient: " + channel.Recipient.Username + "\n"
+	// 	msg += "Author: " + m.Author.Username + "(" + m.Author.ID + ")\n"
+	// 	log.Printf("\n%+v\n", m.Author)
+	// } else {
+	// 	msg += "**== Channel details ==**\n"
+	// 	permissions, err := s.State.UserChannelPermissions(m.Author.ID, m.ChannelID)
+	// 	log.Printf("\n%v\n", permissions)
+	// 	// member, err := s.GuildMember(channel.GuildID, m.Author.ID)
+	// 	if err != nil {
+	// 		fmt.Printf(CMD_PREFIX + "thism cannot find guild member")
+	// 		log.Printf("\n%v\n", err)
+	// 	}
+	// 	msg += "Server: (" + channel.GuildID + ")\n"
+	// 	// msg += fmt.Sprintf("Author roles: %+v \n", member.Roles)
+	// }
 
 	_, err = s.ChannelMessageSend(m.ChannelID, msg)
 	if err != nil {
@@ -499,6 +501,8 @@ func msg_help() string {
 	message += "\no $roll #d# <action> - roll to make an action eg roll 1d20 to party"
 	message += "\n                  - Max 100 dice at a time"
 	message += "\n                  - alias: $r"
+	message += "\n\n== Features"
+	message += "\no $rpihelp				- Gives a list of freeform inventory commands"
 	message += "```"
 
 	return message
@@ -530,3 +534,14 @@ func msg_profile(m *discordgo.MessageCreate, userId []byte) (string, error) {
 	content += "```"
 	return content, nil
 }
+
+// func util_getGuildId(s *discordgo.Session, m *discordgo.MessageCreate) (string, error) {
+// 	channelInfo, err := s.Channel(m.ChannelID)
+// 	if err != nil {
+// 		log.Println("Cannot get server info")
+// 		log.Printf("Error: %+v", err.Error())
+// 		return "", err
+// 	}
+// 	guildId := channelInfo.GuildID
+// 	return guildId, nil
+// }
