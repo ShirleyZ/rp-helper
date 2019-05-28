@@ -318,6 +318,8 @@ func cmd_roll(s *discordgo.Session, m *discordgo.MessageCreate) {
 	result, err := dice.Roll(m.Content[len(cmdAlias):])
 	if err != nil {
 		// Do nothing
+		fmt.Println("!!roll: Error executing dice.Roll")
+		log.Printf("\n%v\n", err)
 	} else {
 		result = m.Author.Username + " " + result
 		_, err = s.ChannelMessageSend(m.ChannelID, result)
