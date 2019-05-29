@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	// "errors"
 	"fmt"
 	"log"
@@ -25,6 +25,12 @@ type AfkUser struct {
 	Username string
 	Reason   string
 	AfkStart time.Time
+}
+
+type SenderInfo struct {
+	Id       string
+	Username string
+	GuildId  string
 }
 
 /* Function takes a string and takes every word
@@ -164,6 +170,7 @@ func cmd_cookie(s *discordgo.Session, m *discordgo.MessageCreate) {
 	recipientId := r.Find([]byte(m.Content))
 
 	giverId := m.Author.ID
+	guildId := m.GuildID
 	amount := 1
 	args := strings.Split(m.Content, " ")
 
@@ -183,7 +190,7 @@ func cmd_cookie(s *discordgo.Session, m *discordgo.MessageCreate) {
 		} else {
 			log.Printf("Sender: %s Receiver: %s Amount: %s", giverId, recipientId, amount)
 
-			err = profile.GiveCookie(string(giverId), string(recipientId), amount)
+			err = profile.GiveCookie(string(giverId), string(recipientId), amount, guildId)
 			if err != nil {
 				_, err = s.ChannelMessageSend(m.ChannelID, err.Error())
 			} else {
@@ -218,7 +225,7 @@ func cmd_credit(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	log.Printf("Giving %+v %d credits", receiverName, amount)
 
-	err = profile.AddCredits(m.Author.ID, receiverName, amount)
+	err = profile.AddCredits(m.Author.ID, receiverName, amount, m.GuildID)
 	if err != nil {
 		log.Println("Unsuccessful attemptt o add")
 		// Do nothing
@@ -237,7 +244,7 @@ func cmd_earnCredits(s *discordgo.Session, m *discordgo.MessageCreate) {
 	rand.Seed(time.Now().UTC().UnixNano())
 	amount := rand.Intn(9) + 1
 	log.Printf("%v earned %v credits", m.Author.Username, amount)
-	_ = profile.AddCredits(m.Author.ID, m.Author.Username, amount)
+	_ = profile.AddCredits(m.Author.ID, m.Author.Username, amount, m.GuildID)
 }
 
 func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -261,7 +268,7 @@ func cmd_register(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	log.Println("Done")
 	log.Println("Calling profile.RegisterUser...")
-	userInfo, err := profile.RegisterUser(m.Author.ID, m.Author.Username)
+	userInfo, err := profile.RegisterUser(m.Author.ID, m.Author.Username, m.GuildID)
 	log.Println("Done")
 
 	if err != nil && err.Error() == profile.ERR_USEREXISTS {
@@ -367,7 +374,12 @@ func cmd_setProfile(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Printf("\nResult\n%s", result)
 		_, err = s.ChannelMessageSend(sendToThis, "There we are. I've updated your record with your new information.")
 
-		userCard, err := msg_profile(m, nil)
+		userInfo, err := profile.CheckStats(m.Author.ID, m.GuildID)
+		if err != nil {
+			log.Println("Error getting userinfo")
+			log.Printf("\n%v\n", err)
+		}
+		userCard, err := msg_profile(m, userInfo)
 		if err != nil {
 			log.Printf("\n%v\n", err)
 		}
@@ -404,8 +416,20 @@ func cmd_stats(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if err != nil {
 				log.Printf("\n%v\n", err)
 			}
+
 		} else {
-			content, err = msg_profile(m, userId)
+			userInfo := profile.UserData{}
+			if userId == nil {
+				userInfo, err = profile.CheckStats(m.Author.ID, m.GuildID)
+			} else {
+				userInfo, err = profile.CheckStats(string(userId), m.GuildID)
+			}
+			if err != nil {
+				log.Printf("Errorrr: %s", err.Error())
+				return
+			}
+
+			content, err = msg_profile(m, userInfo)
 
 			if err != nil {
 				log.Println("There's an error bud")
@@ -507,25 +531,7 @@ func msg_help() string {
 
 	return message
 }
-func msg_profile(m *discordgo.MessageCreate, userId []byte) (string, error) {
-	var err error
-	var data string
-	if userId == nil {
-		data, err = profile.CheckStats(m.Author.ID)
-	} else {
-		data, err = profile.CheckStats(string(userId))
-	}
-	if err != nil {
-		log.Printf("Errorrr: %s", err.Error())
-		return "", err
-	}
-	userInfo := profile.UserData{}
-	err = json.Unmarshal([]byte(data), &userInfo)
-	if err != nil {
-		log.Printf("%v", err)
-		return "", nil
-	}
-
+func msg_profile(m *discordgo.MessageCreate, userInfo profile.UserData) (string, error) {
 	content := "```Markdown\n# == " + userInfo.Title + " " + strings.Title(userInfo.Username) + " == #\n"
 	content += "* Credits: " + strconv.Itoa(userInfo.Credits) + "\n"
 	content += "* Cookies: " + strconv.Itoa(userInfo.Cookies) + "\n"
@@ -534,14 +540,3 @@ func msg_profile(m *discordgo.MessageCreate, userId []byte) (string, error) {
 	content += "```"
 	return content, nil
 }
-
-// func util_getGuildId(s *discordgo.Session, m *discordgo.MessageCreate) (string, error) {
-// 	channelInfo, err := s.Channel(m.ChannelID)
-// 	if err != nil {
-// 		log.Println("Cannot get server info")
-// 		log.Printf("Error: %+v", err.Error())
-// 		return "", err
-// 	}
-// 	guildId := channelInfo.GuildID
-// 	return guildId, nil
-// }

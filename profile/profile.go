@@ -27,11 +27,11 @@ type UserData struct {
 	Title    string
 }
 
-func AddCredits(id string, username string, amount int) error {
+func AddCredits(id string, username string, amount int, guild string) error {
 	username = strings.ToLower(username)
 	log.Printf("=== Adding %d credits to %s (%s)", amount, username, id)
 
-	sendBody, err := url.ParseQuery("username=" + username + "&amount=" + strconv.Itoa(amount) + "&id=" + id)
+	sendBody, err := url.ParseQuery("username=" + username + "&amount=" + strconv.Itoa(amount) + "&id=" + id + "&guild=" + guild)
 	if err != nil {
 		log.Println("Cannot parse query")
 		log.Fatal(err)
@@ -53,11 +53,11 @@ func AddCredits(id string, username string, amount int) error {
 	}
 }
 
-func CheckStats(id string) (string, error) {
+func CheckStats(id string, guildId string) (UserData, error) {
 	// username = strings.ToLower(username)
-	log.Printf("=== Checking status for: %s", id)
+	log.Printf("=== Checking status for: %s (%s)", id, guildId)
 
-	resp, err := http.Get(API_ENDPOINT + "find/?id=" + id)
+	resp, err := http.Get(API_ENDPOINT + "find/?id=" + id + "&guildId=" + guildId)
 	if err != nil {
 		log.Println("Unable to hit GET find/?name=")
 		log.Fatal(err)
@@ -69,11 +69,20 @@ func CheckStats(id string) (string, error) {
 	}
 	log.Printf("%s", body)
 
-	if string(body) == ERR_NOUSER {
+	userStringData := string(body)
+	if userStringData == ERR_NOUSER {
 		log.Println("User doesn't exist.")
-		return "", errors.New(ERR_NOUSER)
+		return UserData{}, errors.New(ERR_NOUSER)
 	}
-	return string(body), nil
+
+	// Convert string to user data
+	userInfo := UserData{}
+	err = json.Unmarshal([]byte(userStringData), &userInfo)
+	if err != nil {
+		log.Printf("%v", err)
+		return UserData{}, err
+	}
+	return userInfo, nil
 }
 
 // func CheckUserExists(username string) bool {
@@ -83,16 +92,14 @@ func CheckStats(id string) (string, error) {
 // 	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username)
 // }
 
-func GiveCookie(giverId string, recipientId string, amount int) error {
+func GiveCookie(giverId string, recipientId string, amount int, guildId string) error {
 	log.Println("== Giving Cookie ==")
 	log.Printf("From: (%s) To: (%s) Amount: %d", giverId, recipientId, amount)
 	if amount < 0 {
 		return errors.New("Amount below 0")
 	}
 	// Get giver info
-	data, err := CheckStats(giverId)
-	giverInfo := UserData{}
-	err = json.Unmarshal([]byte(data), &giverInfo)
+	giverInfo, err := CheckStats(giverId, guildId)
 	if err != nil {
 		log.Printf("\n%v\n", err)
 	}
@@ -114,9 +121,7 @@ func GiveCookie(giverId string, recipientId string, amount int) error {
 		}
 
 		// Get recipient info
-		data, err := CheckStats(recipientId)
-		recipInfo := UserData{}
-		err = json.Unmarshal([]byte(data), &recipInfo)
+		recipInfo, err := CheckStats(recipientId, guildId)
 		if err != nil {
 			log.Printf("Error: %v", err)
 		}
@@ -135,12 +140,12 @@ func GiveCookie(giverId string, recipientId string, amount int) error {
 
 }
 
-func RegisterUser(id string, username string) (string, error) {
+func RegisterUser(id string, username string, guildid string) (string, error) {
 	username = strings.ToLower(username)
 	log.Printf("== Registering this user: %s (%s)", username, id)
 	// Check that it doesn't currently exist
 	log.Println("Looking for user in database...")
-	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username + "&id=" + id)
+	resp, err := http.Get(API_ENDPOINT + "find/?name=" + username + "&id=" + id + "&guild=" + guildid)
 	log.Println("Done")
 
 	log.Println("Reading GET response...")
@@ -165,7 +170,7 @@ func RegisterUser(id string, username string) (string, error) {
 
 	// Going ahead w/ account creation
 	log.Println("Calling registration endpoint...")
-	resp, err = http.Get(API_ENDPOINT + "add/user/?name=" + username + "&id=" + id)
+	resp, err = http.Get(API_ENDPOINT + "add/user/?name=" + username + "&id=" + id + "&guild=" + guildid)
 	if err != nil {
 		log.Println("Unable to hit GET add/?name=")
 		log.Fatal(err)
