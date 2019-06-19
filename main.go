@@ -1,12 +1,13 @@
 package main
 
 import (
+	"./botadmin"
 	"flag"
 	"fmt"
 	"log"
 	"strings"
 	// "time"
-
+	"./errors"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -18,6 +19,7 @@ var (
 
 var AfkList []AfkUser = []AfkUser{}
 var CustomCmdPrefix string = "-"
+var botConf = botadmin.InitBotConfig()
 
 func init() {
 
@@ -48,6 +50,7 @@ func main() {
 	// Register messageCreate as a callback for the messageCreate events.
 	dg.AddHandler(messageCreate)
 	dg.AddHandler(messageDelete)
+	dg.AddHandler(guildCreate)
 
 	// Open the websocket and begin listening.
 	err = dg.Open()
@@ -193,4 +196,23 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func messageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 	fmt.Printf("A message has been deleted")
+}
+
+func guildCreate(s *discordgo.Session, gc *discordgo.GuildCreate) {
+	log.Println("Bot has detected a new guild")
+	log.Printf("Guild is %s", gc.ID)
+
+	log.Printf("\n\nBot settings\n%+v", botConf)
+	// Check if settings exist for this guild
+	_, err := botadmin.FindSettingsByGuildId(gc.ID, &botConf)
+	if err != nil {
+		if err.Error() == rperrors.ERR_NOGUILDSETTINGS {
+			// Init if it doesn't exist
+			log.Printf("initing guild settings for %s", gc.ID)
+			botadmin.InitGuildConfig(&botConf, gc.ID)
+		} else {
+
+		}
+	}
+	log.Printf("\n\nBot settings after stuff\n%+v", botConf)
 }
